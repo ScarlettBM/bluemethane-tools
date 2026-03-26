@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Bluemethane Chemical Dosing Calculator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { margin-top: 20px; }
+    .result-box {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body class="container">
+
+  <h2 class="text-center">Bluemethane Chemical Dosing Calculator</h2>
+
+  <div class="text-center mb-3">
+    <a href="gc_calculator.html" class="btn btn-outline-primary me-2">GC Calculator</a>
+    <a href="Chemical_dosing_calculator.html" class="btn btn-outline-success me-2">Chemical Dosing Calculator</a>
+    <a href="hydroponics_analysis.html" class="btn btn-outline-info">Hydroponics + Horiba Analysis</a>
+  </div>
+
+  <section class="mt-4">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+
+        <div class="mb-3">
+          <label for="chemicalType" class="form-label">What chemical are you using?</label>
+          <select id="chemicalType" class="form-select">
+            <option value="">Select chemical</option>
+            <option value="NaOH">NaOH</option>
+            <option value="H2O2">H2O2</option>
+          </select>
+        </div>
+
+        <div class="mb-3" id="concentrationSection" style="display:none;">
+          <label for="chemicalConcentration" class="form-label">Concentration</label>
+          <select id="chemicalConcentration" class="form-select"></select>
+        </div>
+
+        <div class="mb-3" id="naohTargetSection" style="display:none;">
+          <label for="targetPh" class="form-label">Target pH</label>
+          <select id="targetPh" class="form-select">
+            <option value="8.8">8.8</option>
+            <option value="9.0">9.0</option>
+            <option value="9.2">9.2</option>
+            <option value="10.0">10.0</option>
+          </select>
+        </div>
+
+        <div class="mb-3" id="h2o2TargetSection" style="display:none;">
+          <label for="targetDose" class="form-label">Target dose (mL/L)</label>
+          <input type="number" id="targetDose" class="form-control" value="1.0" step="0.1" min="0">
+        </div>
+
+        <div class="mb-3">
+          <label for="sludgeFlow" class="form-label">Sludge flow rate (LPM)</label>
+          <input type="number" id="sludgeFlow" class="form-control" value="5" step="0.1" min="0">
+        </div>
+
+        <div class="d-grid">
+          <button id="calculateButton" class="btn btn-primary">Calculate Dose</button>
+        </div>
+
+        <div id="results" class="result-box" style="display:none;">
+          <h4>Results</h4>
+          <p><strong>Chemical:</strong> <span id="chemicalResult"></span></p>
+          <p><strong>Concentration:</strong> <span id="concentrationResult"></span></p>
+          <p><strong>Target:</strong> <span id="targetResult"></span></p>
+          <p><strong>Ratio used:</strong> <span id="ratioResult"></span></p>
+          <p><strong>Pump SV:</strong> <span id="pumpLpmResult"></span> LPM</p>
+          <p><strong>Pump SV:</strong> <span id="pumpMlMinResult"></span> mL/min</p>
+          <p class="mb-0"><strong>Formula:</strong> Pump SV (LPM) = RATIO × Sludge_Feed (LPM)</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <script>
+    const baseNaoh32Ratios = {
+      "8.8": 0.0034,
+      "9.0": 0.0056,
+      "9.2": 0.0060,
+      "10.0": 0.0184
+    };
+
+    const chemicalType = document.getElementById("chemicalType");
+    const concentrationSection = document.getElementById("concentrationSection");
+    const concentrationSelect = document.getElementById("chemicalConcentration");
+    const naohTargetSection = document.getElementById("naohTargetSection");
+    const h2o2TargetSection = document.getElementById("h2o2TargetSection");
+
+    chemicalType.addEventListener("change", function () {
+      const chemical = chemicalType.value;
+
+      concentrationSection.style.display = "none";
+      naohTargetSection.style.display = "none";
+      h2o2TargetSection.style.display = "none";
+      concentrationSelect.innerHTML = "";
+
+      if (chemical === "NaOH") {
+        concentrationSection.style.display = "block";
+        naohTargetSection.style.display = "block";
+
+        concentrationSelect.innerHTML = `
+          <option value="32">32%</option>
+          <option value="27">27%</option>
+        `;
+      }
+
+      if (chemical === "H2O2") {
+        concentrationSection.style.display = "block";
+        h2o2TargetSection.style.display = "block";
+
+        concentrationSelect.innerHTML = `
+          <option value="standard">Standard</option>
+        `;
+      }
+    });
+
+    document.getElementById("calculateButton").addEventListener("click", function () {
+      const chemical = chemicalType.value;
+      const concentration = concentrationSelect.value;
+      const sludgeFlow = parseFloat(document.getElementById("sludgeFlow").value);
+
+      if (!chemical) {
+        alert("Please select a chemical.");
+        return;
+      }
+
+      if (isNaN(sludgeFlow) || sludgeFlow < 0) {
+        alert("Please enter a valid sludge flow rate.");
+        return;
+      }
+
+      let ratio = 0;
+      let targetText = "";
+
+      if (chemical === "NaOH") {
+        const targetPh = document.getElementById("targetPh").value;
+        targetText = `pH ${targetPh}`;
+
+        const baseRatio = baseNaoh32Ratios[targetPh];
+
+        if (concentration === "32") {
+          ratio = baseRatio;
+        } else if (concentration === "27") {
+          ratio = baseRatio * (32 / 27);
+        }
+      }
+
+      if (chemical === "H2O2") {
+        const targetDose = parseFloat(document.getElementById("targetDose").value);
+
+        if (isNaN(targetDose) || targetDose < 0) {
+          alert("Please enter a valid H2O2 target dose.");
+          return;
+        }
+
+        targetText = `${targetDose} mL/L`;
+        ratio = targetDose / 1000; // convert mL/L to L/L
+      }
+
+      const pumpLpm = ratio * sludgeFlow;
+      const pumpMlMin = pumpLpm * 1000;
+
+      document.getElementById("chemicalResult").textContent = chemical;
+      document.getElementById("concentrationResult").textContent = concentration === "standard" ? "Standard" : concentration + "%";
+      document.getElementById("targetResult").textContent = targetText;
+      document.getElementById("ratioResult").textContent = ratio.toFixed(4);
+      document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(4);
+      document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(1);
+
+      document.getElementById("results").style.display = "block";
+    });
+  </script>
+
+</body>
+</html>
