@@ -44,15 +44,10 @@
           <select id="chemicalConcentration" class="form-select"></select>
         </div>
 
-        <div class="mb-3" id="naohTargetSection" style="display:none;">
-          <label for="targetPh" class="form-label">Target pH</label>
-          <select id="targetPh" class="form-select">
-            <option value="8.8">8.8</option>
-            <option value="9.0">9.0</option>
-            <option value="9.2">9.2</option>
-            <option value="10.0">10.0</option>
-          </select>
-        </div>
+      <div class="mb-3" id="naohTargetSection" style="display:none;">
+  <label for="targetPh" class="form-label">Target pH</label>
+  <input type="number" id="targetPh" class="form-control" value="9.0" step="0.1" min="0" max="14">
+</div>
 
         <div class="mb-3" id="h2o2TargetSection" style="display:none;">
           <label for="targetDose" class="form-label">Target dose (mL/L)</label>
