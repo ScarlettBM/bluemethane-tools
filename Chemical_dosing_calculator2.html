@@ -169,7 +169,9 @@
       document.getElementById("chemicalResult").textContent = chemical;
       document.getElementById("concentrationResult").textContent = concentration === "standard" ? "Standard" : concentration + "%";
       document.getElementById("targetResult").textContent = targetText;
-      document.getElementById("ratioResult").textContent = ratio.toFixed(4);
+      const ratioMlL = ratio * 1000;
+
+document.getElementById("ratioResult").textContent = ratioMlL.toFixed(2) + " ml/L";
       document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(4);
       document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(1);
 
