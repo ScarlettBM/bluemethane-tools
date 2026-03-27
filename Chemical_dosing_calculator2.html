@@ -79,12 +79,37 @@ Dose (ml/L) × Sludge Flow (L/min) = Pump Speed (ml/min)
   </section>
 
   <script>
-    const baseNaoh32Ratios = {
-      "8.8": 0.0034,
-      "9.0": 0.0056,
-      "9.2": 0.0060,
-      "10.0": 0.0184
-    };
+  const baseNaoh32Points = [
+  { ph: 8.8, ratio: 0.0034 },
+  { ph: 9.0, ratio: 0.0056 },
+  { ph: 9.2, ratio: 0.0060 },
+  { ph: 10.0, ratio: 0.0184 }
+];
+
+function interpolateNaoh32Ratio(targetPh) {
+  if (isNaN(targetPh)) return NaN;
+
+  const points = baseNaoh32Points;
+
+  if (targetPh < points[0].ph || targetPh > points[points.length - 1].ph) {
+    return NaN;
+  }
+
+  for (let i = 0; i < points.length - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+
+    if (targetPh === p1.ph) return p1.ratio;
+    if (targetPh === p2.ph) return p2.ratio;
+
+    if (targetPh > p1.ph && targetPh < p2.ph) {
+      const fraction = (targetPh - p1.ph) / (p2.ph - p1.ph);
+      return p1.ratio + fraction * (p2.ratio - p1.ratio);
+    }
+  }
+
+  return NaN;
+}
 
     const chemicalType = document.getElementById("chemicalType");
     const concentrationSection = document.getElementById("concentrationSection");
@@ -138,7 +163,7 @@ Dose (ml/L) × Sludge Flow (L/min) = Pump Speed (ml/min)
       let ratio = 0;
       let targetText = "";
 
-    if (chemical === "NaOH") {
+   if (chemical === "NaOH") {
   const targetPh = parseFloat(document.getElementById("targetPh").value);
 
   if (isNaN(targetPh) || targetPh <= 0 || targetPh > 14) {
@@ -148,18 +173,10 @@ Dose (ml/L) × Sludge Flow (L/min) = Pump Speed (ml/min)
 
   targetText = `pH ${targetPh}`;
 
-  let baseRatio = 0;
+  const baseRatio = interpolateNaoh32Ratio(targetPh);
 
-  if (targetPh === 8.8) {
-    baseRatio = 0.0034;
-  } else if (targetPh === 9.0) {
-    baseRatio = 0.0056;
-  } else if (targetPh === 9.2) {
-    baseRatio = 0.0060;
-  } else if (targetPh === 10.0) {
-    baseRatio = 0.0184;
-  } else {
-    alert("At the moment, NaOH ratios are only set up for pH 8.8, 9.0, 9.2, and 10.0.");
+  if (isNaN(baseRatio)) {
+    alert("At the moment, the NaOH calculator works for pH values between 8.8 and 10.0.");
     return;
   }
 
