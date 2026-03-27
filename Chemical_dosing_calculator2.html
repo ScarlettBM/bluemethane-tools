@@ -138,18 +138,37 @@ Dose (ml/L) × Sludge Flow (L/min) = Pump Speed (ml/min)
       let ratio = 0;
       let targetText = "";
 
-      if (chemical === "NaOH") {
-        const targetPh = document.getElementById("targetPh").value;
-        targetText = `pH ${targetPh}`;
+    if (chemical === "NaOH") {
+  const targetPh = parseFloat(document.getElementById("targetPh").value);
 
-        const baseRatio = baseNaoh32Ratios[targetPh];
+  if (isNaN(targetPh) || targetPh <= 0 || targetPh > 14) {
+    alert("Please enter a valid target pH.");
+    return;
+  }
 
-        if (concentration === "32") {
-          ratio = baseRatio;
-        } else if (concentration === "27") {
-          ratio = baseRatio * (32 / 27);
-        }
-      }
+  targetText = `pH ${targetPh}`;
+
+  let baseRatio = 0;
+
+  if (targetPh === 8.8) {
+    baseRatio = 0.0034;
+  } else if (targetPh === 9.0) {
+    baseRatio = 0.0056;
+  } else if (targetPh === 9.2) {
+    baseRatio = 0.0060;
+  } else if (targetPh === 10.0) {
+    baseRatio = 0.0184;
+  } else {
+    alert("At the moment, NaOH ratios are only set up for pH 8.8, 9.0, 9.2, and 10.0.");
+    return;
+  }
+
+  if (concentration === "32") {
+    ratio = baseRatio;
+  } else if (concentration === "27") {
+    ratio = baseRatio * (32 / 27);
+  }
+}
 
       if (chemical === "H2O2") {
         const targetDose = parseFloat(document.getElementById("targetDose").value);
