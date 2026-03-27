@@ -6,7 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    body { margin-top: 20px; }
+    body {
+      margin-top: 20px;
+    }
+
     .result-box {
       background-color: #f8f9fa;
       border: 1px solid #dee2e6;
@@ -21,10 +24,10 @@
   <h2 class="text-center">Bluemethane Chemical Dosing Calculator</h2>
 
   <div class="text-center mb-3">
-  <a href="GC_calculator.html" class="btn btn-outline-primary me-2">GC Calculator</a>
-  <a href="Chemical_dosing_calculator2.html" class="btn btn-outline-success me-2">Chemical Dosing Calculator</a>
-  <a href="hydroponics_analysis.html" class="btn btn-outline-info">Hydroponics + Horiba Analysis</a>
-</div>
+    <a href="GC_calculator.html" class="btn btn-outline-primary me-2">GC Calculator</a>
+    <a href="Chemical_dosing_calculator2.html" class="btn btn-outline-success me-2">Chemical Dosing Calculator</a>
+    <a href="hydroponics_analysis.html" class="btn btn-outline-info">Hydroponics + Horiba Analysis</a>
+  </div>
 
   <section class="mt-4">
     <div class="row justify-content-center">
@@ -44,10 +47,11 @@
           <select id="chemicalConcentration" class="form-select"></select>
         </div>
 
-      <div class="mb-3" id="naohTargetSection" style="display:none;">
-  <label for="targetPh" class="form-label">Target pH</label>
-  <input type="number" id="targetPh" class="form-control" value="9.0" step="0.1" min="0" max="14">
-</div>
+        <div class="mb-3" id="naohTargetSection" style="display:none;">
+          <label for="targetPh" class="form-label">Target pH</label>
+          <input type="number" id="targetPh" class="form-control" value="9.0" step="0.1" min="0" max="14">
+          <div class="form-text">NaOH interpolation currently works for pH 8.8 to 10.0.</div>
+        </div>
 
         <div class="mb-3" id="h2o2TargetSection" style="display:none;">
           <label for="targetDose" class="form-label">Target dose (mL/L)</label>
@@ -72,44 +76,47 @@
           <p><strong>Pump SV:</strong> <span id="pumpLpmResult"></span> LPM</p>
           <p><strong>Pump SV:</strong> <span id="pumpMlMinResult"></span> mL/min</p>
           <p class="mb-0">
-<strong>Calculation:</strong><br>
-Dose (ml/L) × Sludge Flow (L/min) = Pump Speed (ml/min)
-</p>
+            <strong>Calculation:</strong><br>
+            Dose (mL/L) × Sludge Flow (L/min) = Pump Speed (mL/min)
+          </p>
+        </div>
+
+      </div>
     </div>
   </section>
 
   <script>
-  const baseNaoh32Points = [
-  { ph: 8.8, ratio: 0.0034 },
-  { ph: 9.0, ratio: 0.0056 },
-  { ph: 9.2, ratio: 0.0060 },
-  { ph: 10.0, ratio: 0.0184 }
-];
+    const baseNaoh32Points = [
+      { ph: 8.8, ratio: 0.0034 },
+      { ph: 9.0, ratio: 0.0056 },
+      { ph: 9.2, ratio: 0.0060 },
+      { ph: 10.0, ratio: 0.0184 }
+    ];
 
-function interpolateNaoh32Ratio(targetPh) {
-  if (isNaN(targetPh)) return NaN;
+    function interpolateNaoh32Ratio(targetPh) {
+      if (isNaN(targetPh)) return NaN;
 
-  const points = baseNaoh32Points;
+      const points = baseNaoh32Points;
 
-  if (targetPh < points[0].ph || targetPh > points[points.length - 1].ph) {
-    return NaN;
-  }
+      if (targetPh < points[0].ph || targetPh > points[points.length - 1].ph) {
+        return NaN;
+      }
 
-  for (let i = 0; i < points.length - 1; i++) {
-    const p1 = points[i];
-    const p2 = points[i + 1];
+      for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
 
-    if (targetPh === p1.ph) return p1.ratio;
-    if (targetPh === p2.ph) return p2.ratio;
+        if (targetPh === p1.ph) return p1.ratio;
+        if (targetPh === p2.ph) return p2.ratio;
 
-    if (targetPh > p1.ph && targetPh < p2.ph) {
-      const fraction = (targetPh - p1.ph) / (p2.ph - p1.ph);
-      return p1.ratio + fraction * (p2.ratio - p1.ratio);
+        if (targetPh > p1.ph && targetPh < p2.ph) {
+          const fraction = (targetPh - p1.ph) / (p2.ph - p1.ph);
+          return p1.ratio + fraction * (p2.ratio - p1.ratio);
+        }
+      }
+
+      return NaN;
     }
-  }
-
-  return NaN;
-}
 
     const chemicalType = document.getElementById("chemicalType");
     const concentrationSection = document.getElementById("concentrationSection");
@@ -128,7 +135,6 @@ function interpolateNaoh32Ratio(targetPh) {
       if (chemical === "NaOH") {
         concentrationSection.style.display = "block";
         naohTargetSection.style.display = "block";
-
         concentrationSelect.innerHTML = `
           <option value="32">32%</option>
           <option value="27">27%</option>
@@ -138,7 +144,6 @@ function interpolateNaoh32Ratio(targetPh) {
       if (chemical === "H2O2") {
         concentrationSection.style.display = "block";
         h2o2TargetSection.style.display = "block";
-
         concentrationSelect.innerHTML = `
           <option value="standard">Standard</option>
         `;
@@ -160,32 +165,32 @@ function interpolateNaoh32Ratio(targetPh) {
         return;
       }
 
-      let ratio = 0;
+      let ratio = NaN;
       let targetText = "";
 
-   if (chemical === "NaOH") {
-  const targetPh = parseFloat(document.getElementById("targetPh").value);
+      if (chemical === "NaOH") {
+        const targetPh = parseFloat(document.getElementById("targetPh").value);
 
-  if (isNaN(targetPh) || targetPh <= 0 || targetPh > 14) {
-    alert("Please enter a valid target pH.");
-    return;
-  }
+        if (isNaN(targetPh) || targetPh <= 0 || targetPh > 14) {
+          alert("Please enter a valid target pH.");
+          return;
+        }
 
-  targetText = `pH ${targetPh}`;
+        const baseRatio = interpolateNaoh32Ratio(targetPh);
 
-  const baseRatio = interpolateNaoh32Ratio(targetPh);
+        if (isNaN(baseRatio)) {
+          alert("At the moment, the NaOH calculator works for pH values between 8.8 and 10.0.");
+          return;
+        }
 
-  if (isNaN(baseRatio)) {
-    alert("At the moment, the NaOH calculator works for pH values between 8.8 and 10.0.");
-    return;
-  }
+        targetText = `pH ${targetPh.toFixed(1)}`;
 
-  if (concentration === "32") {
-    ratio = baseRatio;
-  } else if (concentration === "27") {
-    ratio = baseRatio * (32 / 27);
-  }
-}
+        if (concentration === "32") {
+          ratio = baseRatio;
+        } else if (concentration === "27") {
+          ratio = baseRatio * (32 / 27);
+        }
+      }
 
       if (chemical === "H2O2") {
         const targetDose = parseFloat(document.getElementById("targetDose").value);
@@ -195,19 +200,24 @@ function interpolateNaoh32Ratio(targetPh) {
           return;
         }
 
-        targetText = `${targetDose} mL/L`;
-        ratio = targetDose / 1000; // convert mL/L to L/L
+        targetText = `${targetDose.toFixed(1)} mL/L`;
+        ratio = targetDose / 1000;
+      }
+
+      if (isNaN(ratio)) {
+        alert("Unable to calculate dose. Please check the inputs.");
+        return;
       }
 
       const pumpLpm = ratio * sludgeFlow;
       const pumpMlMin = pumpLpm * 1000;
-
-      document.getElementById("chemicalResult").textContent = chemical;
-      document.getElementById("concentrationResult").textContent = concentration === "standard" ? "Standard" : concentration + "%";
-      document.getElementById("targetResult").textContent = targetText;
       const ratioMlL = ratio * 1000;
 
-document.getElementById("ratioResult").textContent = ratioMlL.toFixed(2) + " ml/L";
+      document.getElementById("chemicalResult").textContent = chemical;
+      document.getElementById("concentrationResult").textContent =
+        concentration === "standard" ? "Standard" : concentration + "%";
+      document.getElementById("targetResult").textContent = targetText;
+      document.getElementById("ratioResult").textContent = ratioMlL.toFixed(2) + " mL/L";
       document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(4);
       document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(1);
 
