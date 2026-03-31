@@ -63,11 +63,11 @@
           <div class="input-group">
             <input type="number" id="sludgeFlow" class="form-control" value="5" step="0.1" min="0">
             <select id="flowUnit" class="form-select">
-              <option value="mlmin" selected>mL/min</option>
-              <option value="mlh">mL/h</option>
-              <option value="Lmin">L/min</option>
+              <option value="m3h" selected>m³/h</option>
               <option value="Lh">L/h</option>
-              <option value="m3h">m³/h</option>
+              <option value="Lmin">L/min</option>
+              <option value="mlh">mL/h</option>
+              <option value="mlmin">mL/min</option>
             </select>
           </div>
         </div>
@@ -82,9 +82,9 @@
           <p><strong>Reagent concentration:</strong> <span id="concentrationResult"></span></p>
           <p><strong>Target:</strong> <span id="targetResult"></span></p>
           <p><strong>Chemical dose:</strong> <span id="ratioResult"></span></p>
-          <p><strong>Pump SV:</strong> <span id="pumpLpmResult"></span> L/min</p>
-          <p><strong>Pump SV:</strong> <span id="pumpLhResult"></span> L/h</p>
-          <p><strong>Pump SV:</strong> <span id="pumpMlMinResult"></span> mL/min</p>
+          <p><strong>Pump SV (L/h):</strong> <span id="pumpLhResult"></span></p>
+          <p><strong>Pump SV (L/min):</strong> <span id="pumpLpmResult"></span></p>
+          <p><strong>Pump SV (mL/min):</strong> <span id="pumpMlMinResult"></span></p>
           <p class="text-muted mb-2"><small>SV = Stroke Volume.</small></p>
           <p class="mb-0">
             <strong>Calculation:</strong><br>
@@ -165,8 +165,8 @@
         concentrationSection.style.display = "block";
         naohTargetSection.style.display = "block";
         concentrationSelect.innerHTML = `
-          <option value="32">32%</option>
-          <option value="27">27%</option>
+        <option value="27">27%</option>
+        <option value="32">32%</option>
         `;
       }
 
