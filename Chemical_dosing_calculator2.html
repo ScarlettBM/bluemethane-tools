@@ -43,7 +43,7 @@
         </div>
 
         <div class="mb-3" id="concentrationSection" style="display:none;">
-          <label for="chemicalConcentration" class="form-label">Concentration</label>
+          <label for="chemicalConcentration" class="form-label">Reagent concentration</label>
           <select id="chemicalConcentration" class="form-select"></select>
         </div>
 
@@ -54,13 +54,22 @@
         </div>
 
         <div class="mb-3" id="h2o2TargetSection" style="display:none;">
-          <label for="targetDose" class="form-label">Target dose (mL/L)</label>
+          <label for="targetDose" class="form-label">Target dose (mL of chemical per L of sludge)</label>
           <input type="number" id="targetDose" class="form-control" value="1.0" step="0.1" min="0">
         </div>
 
         <div class="mb-3">
-          <label for="sludgeFlow" class="form-label">Sludge flow rate (LPM)</label>
-          <input type="number" id="sludgeFlow" class="form-control" value="5" step="0.1" min="0">
+          <label for="sludgeFlow" class="form-label">Sludge flow rate</label>
+          <div class="input-group">
+            <input type="number" id="sludgeFlow" class="form-control" value="5" step="0.1" min="0">
+            <select id="flowUnit" class="form-select">
+              <option value="mlmin" selected>mL/min</option>
+              <option value="mlh">mL/h</option>
+              <option value="Lmin">L/min</option>
+              <option value="Lh">L/h</option>
+              <option value="m3h">m³/h</option>
+            </select>
+          </div>
         </div>
 
         <div class="d-grid">
@@ -70,14 +79,15 @@
         <div id="results" class="result-box" style="display:none;">
           <h4>Results</h4>
           <p><strong>Chemical:</strong> <span id="chemicalResult"></span></p>
-          <p><strong>Concentration:</strong> <span id="concentrationResult"></span></p>
+          <p><strong>Reagent concentration:</strong> <span id="concentrationResult"></span></p>
           <p><strong>Target:</strong> <span id="targetResult"></span></p>
           <p><strong>Chemical dose:</strong> <span id="ratioResult"></span></p>
           <p><strong>Pump SV:</strong> <span id="pumpLpmResult"></span> LPM</p>
           <p><strong>Pump SV:</strong> <span id="pumpMlMinResult"></span> mL/min</p>
+          <p class="text-muted mb-2"><small>SV = Stroke Volume.</small></p>
           <p class="mb-0">
             <strong>Calculation:</strong><br>
-            Dose (mL/L) × Sludge Flow (L/min) = Pump Speed (mL/min)
+            Dose (mL of chemical per L of sludge) × Sludge Flow (L/min) = Pump Speed (mL/min)
           </p>
         </div>
 
@@ -125,6 +135,15 @@
       return NaN;
     }
 
+    function convertFlowToLMin(value, unit) {
+      if (unit === "Lmin") return value;
+      if (unit === "Lh") return value / 60;
+      if (unit === "mlmin") return value / 1000;
+      if (unit === "mlh") return value / 60000;
+      if (unit === "m3h") return (value * 1000) / 60;
+      return NaN;
+    }
+
     const chemicalType = document.getElementById("chemicalType");
     const concentrationSection = document.getElementById("concentrationSection");
     const concentrationSelect = document.getElementById("chemicalConcentration");
@@ -162,15 +181,23 @@
     document.getElementById("calculateButton").addEventListener("click", function () {
       const chemical = chemicalType.value;
       const concentration = concentrationSelect.value;
-      const sludgeFlow = parseFloat(document.getElementById("sludgeFlow").value);
+      const sludgeFlowInput = parseFloat(document.getElementById("sludgeFlow").value);
+      const flowUnit = document.getElementById("flowUnit").value;
 
       if (!chemical) {
         alert("Please select a chemical.");
         return;
       }
 
-      if (isNaN(sludgeFlow) || sludgeFlow < 0) {
+      if (isNaN(sludgeFlowInput) || sludgeFlowInput < 0) {
         alert("Please enter a valid sludge flow rate.");
+        return;
+      }
+
+      const sludgeFlowLMin = convertFlowToLMin(sludgeFlowInput, flowUnit);
+
+      if (isNaN(sludgeFlowLMin) || sludgeFlowLMin < 0) {
+        alert("Unable to convert sludge flow rate.");
         return;
       }
 
@@ -212,7 +239,7 @@
           return;
         }
 
-        targetText = `${targetDose.toFixed(1)} mL/L`;
+        targetText = `${targetDose.toFixed(1)} mL of chemical per L of sludge`;
         ratio = targetDose / 1000;
       }
 
@@ -221,7 +248,7 @@
         return;
       }
 
-      const pumpLpm = ratio * sludgeFlow;
+      const pumpLpm = ratio * sludgeFlowLMin;
       const pumpMlMin = pumpLpm * 1000;
       const ratioMlL = ratio * 1000;
 
@@ -229,7 +256,7 @@
       document.getElementById("concentrationResult").textContent =
         concentration === "standard" ? "Standard" : concentration + "%";
       document.getElementById("targetResult").textContent = targetText;
-      document.getElementById("ratioResult").textContent = ratioMlL.toFixed(2) + " mL/L";
+      document.getElementById("ratioResult").textContent = ratioMlL.toFixed(2) + " mL of chemical per L of sludge";
       document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(4);
       document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(1);
 
