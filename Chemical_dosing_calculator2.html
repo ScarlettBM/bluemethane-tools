@@ -257,8 +257,8 @@
         concentration === "standard" ? "Standard" : concentration + "%";
       document.getElementById("targetResult").textContent = targetText;
       document.getElementById("ratioResult").textContent = ratioMlL.toFixed(2) + " mL of chemical per L of sludge";
-      document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(4);
-      document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(1);
+      document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(6);
+      document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(3);
 
       document.getElementById("results").style.display = "block";
     });
