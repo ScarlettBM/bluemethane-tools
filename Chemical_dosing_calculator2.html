@@ -82,13 +82,13 @@
           <p><strong>Reagent concentration:</strong> <span id="concentrationResult"></span></p>
           <p><strong>Target:</strong> <span id="targetResult"></span></p>
           <p><strong>Chemical dose:</strong> <span id="ratioResult"></span></p>
-          <p><strong>Pump SV (L/h):</strong> <span id="pumpLhResult"></span></p>
-          <p><strong>Pump SV (L/min):</strong> <span id="pumpLpmResult"></span></p>
-          <p><strong>Pump SV (mL/min):</strong> <span id="pumpMlMinResult"></span></p>
-          <p class="text-muted mb-2"><small>SV = Stroke Volume.</small></p>
+          <p><strong>Chemical dosage (L/h):</strong> <span id="pumpLhResult"></span></p>
+          <p><strong>Chemical dosage (L/min):</strong> <span id="pumpLpmResult"></span></p>
+          <p><strong>Chemical dosage (mL/min):</strong> <span id="pumpMlMinResult"></span></p>
           <p class="mb-0">
             <strong>Calculation:</strong><br>
-            Dose (mL of chemical per L of sludge) × Sludge Flow (L/min) = Pump Speed (mL/min)
+            Dose (mL of chemical per L of sludge) × Sludge flow (L/min) = Chemical dosage (mL/min)<br>
+            Chemical dosage (L/min) × 60 = Chemical dosage (L/h)
           </p>
         </div>
 
@@ -165,8 +165,8 @@
         concentrationSection.style.display = "block";
         naohTargetSection.style.display = "block";
         concentrationSelect.innerHTML = `
-        <option value="27">27%</option>
-        <option value="32">32%</option>
+          <option value="27">27%</option>
+          <option value="32">32%</option>
         `;
       }
 
@@ -259,9 +259,9 @@
         concentration === "standard" ? "Standard" : concentration + "%";
       document.getElementById("targetResult").textContent = targetText;
       document.getElementById("ratioResult").textContent = ratioMlL.toFixed(2) + " mL of chemical per L of sludge";
-      document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(6);
-      document.getElementById("pumpLhResult").textContent = pumpLh.toFixed(3);
-      document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(2);
+      document.getElementById("pumpLhResult").textContent = pumpLh.toFixed(3) + " L/h";
+      document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(6) + " L/min";
+      document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(2) + " mL/min";
 
       document.getElementById("results").style.display = "block";
     });
