@@ -17,6 +17,23 @@
       padding: 20px;
       margin-top: 20px;
     }
+
+    .mode-box {
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 20px;
+      background-color: #ffffff;
+    }
+
+    .highlight-result {
+      background-color: #e9f7ef;
+      border: 1px solid #badbcc;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
   </style>
 </head>
 <body class="container">
@@ -31,7 +48,15 @@
 
   <section class="mt-4">
     <div class="row justify-content-center">
-      <div class="col-md-6">
+      <div class="col-md-7">
+
+        <div class="mode-box">
+          <label class="form-label"><strong>Calculation mode</strong></label>
+          <select id="calculationMode" class="form-select">
+            <option value="forward">Calculate chemical dosage from target</option>
+            <option value="reverse">Calculate chemical ratio from chemical dosage (L/h)</option>
+          </select>
+        </div>
 
         <div class="mb-3">
           <label for="chemicalType" class="form-label">What chemical are you using?</label>
@@ -47,15 +72,29 @@
           <select id="chemicalConcentration" class="form-select"></select>
         </div>
 
-        <div class="mb-3" id="naohTargetSection" style="display:none;">
-          <label for="targetPh" class="form-label">Target pH</label>
-          <input type="number" id="targetPh" class="form-control" value="9.0" step="0.1" min="6" max="14">
-          <div id="phHelpText" class="form-text"></div>
+        <!-- Forward mode inputs -->
+        <div id="forwardInputs">
+          <div class="mb-3" id="naohTargetSection" style="display:none;">
+            <label for="targetPh" class="form-label">Target pH</label>
+            <input type="number" id="targetPh" class="form-control" value="9.0" step="0.1" min="6" max="14">
+            <div id="phHelpText" class="form-text"></div>
+          </div>
+
+          <div class="mb-3" id="h2o2TargetSection" style="display:none;">
+            <label for="targetDose" class="form-label">Target dose (mL of chemical per L of sludge)</label>
+            <input type="number" id="targetDose" class="form-control" value="1.0" step="0.1" min="0">
+          </div>
         </div>
 
-        <div class="mb-3" id="h2o2TargetSection" style="display:none;">
-          <label for="targetDose" class="form-label">Target dose (mL of chemical per L of sludge)</label>
-          <input type="number" id="targetDose" class="form-control" value="1.0" step="0.1" min="0">
+        <!-- Reverse mode inputs -->
+        <div id="reverseInputs" style="display:none;">
+          <div class="mb-3">
+            <label for="chemicalFlow" class="form-label">Chemical dosage</label>
+            <div class="input-group">
+              <input type="number" id="chemicalFlow" class="form-control" value="1.0" step="0.1" min="0">
+              <span class="input-group-text">L/h</span>
+            </div>
+          </div>
         </div>
 
         <div class="mb-3">
@@ -73,22 +112,29 @@
         </div>
 
         <div class="d-grid">
-          <button id="calculateButton" class="btn btn-primary">Calculate Dose</button>
+          <button id="calculateButton" class="btn btn-primary">Calculate</button>
         </div>
 
         <div id="results" class="result-box" style="display:none;">
           <h4>Results</h4>
+
+          <div class="highlight-result">
+            <strong id="mainResultLabel">Chemical dosage (L/h):</strong>
+            <span id="mainResultValue"></span>
+          </div>
+
           <p><strong>Chemical:</strong> <span id="chemicalResult"></span></p>
           <p><strong>Reagent concentration:</strong> <span id="concentrationResult"></span></p>
-          <p><strong>Target:</strong> <span id="targetResult"></span></p>
-          <p><strong>Chemical dose:</strong> <span id="ratioResult"></span></p>
+          <p><strong>Target / input:</strong> <span id="targetResult"></span></p>
+          <p><strong>Chemical ratio:</strong> <span id="ratioResult"></span></p>
           <p><strong>Chemical dosage (L/h):</strong> <span id="pumpLhResult"></span></p>
           <p><strong>Chemical dosage (L/min):</strong> <span id="pumpLpmResult"></span></p>
           <p><strong>Chemical dosage (mL/min):</strong> <span id="pumpMlMinResult"></span></p>
+          <p><strong>Sludge flow (L/min):</strong> <span id="sludgeLminResult"></span></p>
+
           <p class="mb-0">
             <strong>Calculation:</strong><br>
-            Dose (mL of chemical per L of sludge) × Sludge flow (L/min) = Chemical dosage (mL/min)<br>
-            Chemical dosage (L/min) × 60 = Chemical dosage (L/h)
+            <span id="calculationText"></span>
           </p>
         </div>
 
@@ -145,25 +191,51 @@
       return NaN;
     }
 
+    const calculationMode = document.getElementById("calculationMode");
     const chemicalType = document.getElementById("chemicalType");
     const concentrationSection = document.getElementById("concentrationSection");
     const concentrationSelect = document.getElementById("chemicalConcentration");
     const naohTargetSection = document.getElementById("naohTargetSection");
     const h2o2TargetSection = document.getElementById("h2o2TargetSection");
+    const forwardInputs = document.getElementById("forwardInputs");
+    const reverseInputs = document.getElementById("reverseInputs");
     const phHelpText = document.getElementById("phHelpText");
+
+    function updateModeDisplay() {
+      const mode = calculationMode.value;
+      const chemical = chemicalType.value;
+
+      if (mode === "forward") {
+        forwardInputs.style.display = "block";
+        reverseInputs.style.display = "none";
+
+        if (chemical === "NaOH") {
+          naohTargetSection.style.display = "block";
+          h2o2TargetSection.style.display = "none";
+        } else if (chemical === "H2O2") {
+          naohTargetSection.style.display = "none";
+          h2o2TargetSection.style.display = "block";
+        } else {
+          naohTargetSection.style.display = "none";
+          h2o2TargetSection.style.display = "none";
+        }
+      } else {
+        forwardInputs.style.display = "none";
+        reverseInputs.style.display = "block";
+        naohTargetSection.style.display = "none";
+        h2o2TargetSection.style.display = "none";
+      }
+    }
 
     chemicalType.addEventListener("change", function () {
       const chemical = chemicalType.value;
 
       concentrationSection.style.display = "none";
-      naohTargetSection.style.display = "none";
-      h2o2TargetSection.style.display = "none";
       concentrationSelect.innerHTML = "";
       phHelpText.textContent = "";
 
       if (chemical === "NaOH") {
         concentrationSection.style.display = "block";
-        naohTargetSection.style.display = "block";
         concentrationSelect.innerHTML = `
           <option value="27">27%</option>
           <option value="32">32%</option>
@@ -172,14 +244,18 @@
 
       if (chemical === "H2O2") {
         concentrationSection.style.display = "block";
-        h2o2TargetSection.style.display = "block";
         concentrationSelect.innerHTML = `
           <option value="standard">Standard</option>
         `;
       }
+
+      updateModeDisplay();
     });
 
+    calculationMode.addEventListener("change", updateModeDisplay);
+
     document.getElementById("calculateButton").addEventListener("click", function () {
+      const mode = calculationMode.value;
       const chemical = chemicalType.value;
       const concentration = concentrationSelect.value;
       const sludgeFlowInput = parseFloat(document.getElementById("sludgeFlow").value);
@@ -190,81 +266,125 @@
         return;
       }
 
-      if (isNaN(sludgeFlowInput) || sludgeFlowInput < 0) {
+      if (isNaN(sludgeFlowInput) || sludgeFlowInput <= 0) {
         alert("Please enter a valid sludge flow rate.");
         return;
       }
 
       const sludgeFlowLMin = convertFlowToLMin(sludgeFlowInput, flowUnit);
 
-      if (isNaN(sludgeFlowLMin) || sludgeFlowLMin < 0) {
+      if (isNaN(sludgeFlowLMin) || sludgeFlowLMin <= 0) {
         alert("Unable to convert sludge flow rate.");
         return;
       }
 
       let ratio = NaN;
+      let pumpLpm = NaN;
+      let pumpLh = NaN;
+      let pumpMlMin = NaN;
       let targetText = "";
+      let calculationText = "";
+      let mainResultLabel = "";
+      let mainResultValue = "";
 
-      if (chemical === "NaOH") {
-        const targetPh = parseFloat(document.getElementById("targetPh").value);
+      if (mode === "forward") {
+        if (chemical === "NaOH") {
+          const targetPh = parseFloat(document.getElementById("targetPh").value);
 
-        if (isNaN(targetPh) || targetPh < 6 || targetPh > 14) {
-          alert("Please enter a valid pH between 6 and 14.");
+          if (isNaN(targetPh) || targetPh < 6 || targetPh > 14) {
+            alert("Please enter a valid pH between 6 and 14.");
+            return;
+          }
+
+          targetText = `Target pH ${targetPh.toFixed(1)}`;
+
+          if (targetPh < 8.8) {
+            phHelpText.textContent = "Warning: pH below 8.8 is outside the calibrated NaOH range. Result is extrapolated.";
+          } else if (targetPh > 10) {
+            phHelpText.textContent = "Warning: pH above 10 is outside the calibrated NaOH range. Result is extrapolated.";
+          } else {
+            phHelpText.textContent = "";
+          }
+
+          const baseRatio = interpolateNaoh32Ratio(targetPh);
+
+          if (concentration === "32") {
+            ratio = baseRatio;
+          } else if (concentration === "27") {
+            ratio = baseRatio * (32 / 27);
+          }
+        }
+
+        if (chemical === "H2O2") {
+          const targetDose = parseFloat(document.getElementById("targetDose").value);
+
+          if (isNaN(targetDose) || targetDose < 0) {
+            alert("Please enter a valid H2O2 target dose.");
+            return;
+          }
+
+          targetText = `${targetDose.toFixed(1)} mL of chemical per L of sludge`;
+          ratio = targetDose / 1000;
+        }
+
+        if (isNaN(ratio)) {
+          alert("Unable to calculate dose. Please check the inputs.");
           return;
         }
 
-        targetText = `pH ${targetPh.toFixed(1)}`;
+        pumpLpm = ratio * sludgeFlowLMin;
+        pumpLh = pumpLpm * 60;
+        pumpMlMin = pumpLpm * 1000;
 
-        if (targetPh < 8.8) {
-          phHelpText.textContent = "Warning: pH below 8.8 is outside the calibrated NaOH range. Result is extrapolated.";
-        } else if (targetPh > 10) {
-          phHelpText.textContent = "Warning: pH above 10 is outside the calibrated NaOH range. Result is extrapolated.";
-        } else {
-          phHelpText.textContent = "";
-        }
+        calculationText =
+          "Dose (mL of chemical per L of sludge) × Sludge flow (L/min) = Chemical dosage (mL/min)<br>" +
+          "Chemical dosage (L/min) × 60 = Chemical dosage (L/h)";
 
-        const baseRatio = interpolateNaoh32Ratio(targetPh);
-
-        if (concentration === "32") {
-          ratio = baseRatio;
-        } else if (concentration === "27") {
-          ratio = baseRatio * (32 / 27);
-        }
+        mainResultLabel = "Chemical dosage (L/h):";
+        mainResultValue = pumpLh.toFixed(3) + " L/h";
       }
 
-      if (chemical === "H2O2") {
-        const targetDose = parseFloat(document.getElementById("targetDose").value);
+      if (mode === "reverse") {
+        const chemicalFlowLh = parseFloat(document.getElementById("chemicalFlow").value);
 
-        if (isNaN(targetDose) || targetDose < 0) {
-          alert("Please enter a valid H2O2 target dose.");
+        if (isNaN(chemicalFlowLh) || chemicalFlowLh < 0) {
+          alert("Please enter a valid chemical dosage in L/h.");
           return;
         }
 
-        targetText = `${targetDose.toFixed(1)} mL of chemical per L of sludge`;
-        ratio = targetDose / 1000;
-      }
+        pumpLh = chemicalFlowLh;
+        pumpLpm = pumpLh / 60;
+        pumpMlMin = pumpLpm * 1000;
+        ratio = pumpMlMin / sludgeFlowLMin / 1000;
 
-      if (isNaN(ratio)) {
-        alert("Unable to calculate dose. Please check the inputs.");
-        return;
-      }
+        targetText = `${chemicalFlowLh.toFixed(3)} L/h entered`;
 
-      const pumpLpm = ratio * sludgeFlowLMin;
-      const pumpLh = pumpLpm * 60;
-      const pumpMlMin = pumpLpm * 1000;
-      const ratioMlL = ratio * 1000;
+        calculationText =
+          "Chemical dosage (L/h) ÷ 60 = Chemical dosage (L/min)<br>" +
+          "Chemical dosage (L/min) × 1000 = Chemical dosage (mL/min)<br>" +
+          "Chemical dosage (mL/min) ÷ Sludge flow (L/min) = Dose ratio (mL chemical per L sludge)";
+
+        mainResultLabel = "Chemical ratio:";
+        mainResultValue = (ratio * 1000).toFixed(2) + " mL of chemical per L of sludge";
+      }
 
       document.getElementById("chemicalResult").textContent = chemical;
       document.getElementById("concentrationResult").textContent =
         concentration === "standard" ? "Standard" : concentration + "%";
       document.getElementById("targetResult").textContent = targetText;
-      document.getElementById("ratioResult").textContent = ratioMlL.toFixed(2) + " mL of chemical per L of sludge";
+      document.getElementById("ratioResult").textContent = (ratio * 1000).toFixed(2) + " mL of chemical per L of sludge";
       document.getElementById("pumpLhResult").textContent = pumpLh.toFixed(3) + " L/h";
       document.getElementById("pumpLpmResult").textContent = pumpLpm.toFixed(6) + " L/min";
       document.getElementById("pumpMlMinResult").textContent = pumpMlMin.toFixed(2) + " mL/min";
+      document.getElementById("sludgeLminResult").textContent = sludgeFlowLMin.toFixed(6) + " L/min";
+      document.getElementById("mainResultLabel").textContent = mainResultLabel;
+      document.getElementById("mainResultValue").textContent = mainResultValue;
+      document.getElementById("calculationText").innerHTML = calculationText;
 
       document.getElementById("results").style.display = "block";
     });
+
+    updateModeDisplay();
   </script>
 
 </body>
