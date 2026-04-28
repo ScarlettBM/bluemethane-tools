@@ -2,7 +2,7 @@
 <html lang="en" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
 <head>
   <meta charset="UTF-8">
-  <title>Bluemethane 065 Gas Analysis Calculator</title>
+  <title>Bluemethane 065 GC Calculator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Bootstrap CSS -->
@@ -34,28 +34,21 @@
 </head>
 
 <body class="container">
-  <h2 class="text-center">Bluemethane 065 Gas Analysis Calculator</h2>
-  <p class="text-center text-muted mb-3">Methane calculation using Ideal Gas Law for headspace and Bunsen solubility for liquid phase.</p>
+  <h2 class="text-center">Bluemethane 065 GC Calculator</h2>
+  <p class="text-center text-muted mb-3">Methane calculation using Henry constant for dissolved methane and standard molar volume at NTP for headspace methane.</p>
 
+  <!-- Navigation -->
   <div class="text-center mb-3">
     <div class="dropdown d-inline-block me-2">
-  <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown">
-    GC Calculators
-  </button>
-  <ul class="dropdown-menu">
-    <li>
-      <a class="dropdown-item" href="GC_calculator.html">
-        061 GC Calculator (Original)
-      </a>
-    </li>
-    <li>
-      <a class="dropdown-item" href="065 GC calculator.html">
-        065 GC Calculator (New)
-      </a>
-    </li>
-  </ul>
-</div>
-    <a href="065 GC calculator.html" class="btn btn-primary me-2">065 GC Calculator</a>
+      <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+        GC Calculators
+      </button>
+      <ul class="dropdown-menu">
+        <li><a class="dropdown-item" href="GC_calculator.html">061 GC Calculator (Original)</a></li>
+        <li><a class="dropdown-item active" href="065 GC calculator.html">065 GC Calculator (New)</a></li>
+      </ul>
+    </div>
+
     <a href="Chemical_dosing_calculator2.html" class="btn btn-outline-success me-2">Chemical Dosing Calculator</a>
     <a href="hydroponics_analysis.html" class="btn btn-outline-info">Hydroponics + Horiba Analysis</a>
   </div>
@@ -63,8 +56,8 @@
   <!-- File Upload Section -->
   <section id="fileUploadSection" class="mt-4 card shadow-sm">
     <div class="card-body text-center">
-      <h5 class="card-title">Upload GC Data</h5>
-      <p class="small-muted">Upload a .xlsx file containing the 065 calculation columns.</p>
+      <h5 class="card-title">Upload 065 GC Data</h5>
+      <p class="small-muted">Upload a .xlsx file containing the corrected 065 calculation columns.</p>
       <input type="file" id="fileInput" accept=".xlsx" class="form-control mx-auto" style="max-width: 400px;">
       <div class="mt-2 text-center" id="fileUploadStatus"></div>
     </div>
@@ -74,11 +67,15 @@
   <section class="alert alert-secondary mt-4 calculator-note">
     <strong>065 calculation method:</strong>
     <br>
-    Headspace methane is calculated using the Ideal Gas Law: <strong>n = PV / RT</strong>, then converted from moles to mg and divided by sludge volume.
+    Methane fraction is calculated as <strong>Cg = Concent_CH4 (%) / 100</strong>.
     <br>
-    Liquid methane is calculated using the <strong>Bunsen coefficient</strong>, partial pressure of methane, sludge volume, and methane molecular weight.
+    Methane partial pressure is calculated as <strong>Pg = Cg × Total_P</strong>.
     <br>
-    Total methane is calculated as: <strong>TC_065 = C_CH4 hs + C_CH4 liq</strong>.
+    Dissolved methane is calculated as <strong>C_A = (Molar_water × Pg × Molecular_mass_CH4 × 1000) / Kh</strong>.
+    <br>
+    Headspace methane is calculated as <strong>C_AH = (Cg × Molecular_mass_CH4 × 1000 / Standard volume at NTP) × (V_headspace / V_sludge) × (T_reference / T_sample_K)</strong>.
+    <br>
+    Total methane is calculated as <strong>TC = C_A + C_AH</strong>.
   </section>
 
   <!-- Column Definitions Section -->
@@ -96,19 +93,23 @@
             <li><strong>Sampling Technique</strong> - e.g. HS in field, prefilled NaOH + sludge.</li>
             <li><strong>Date_GC</strong> - GC analysis date.</li>
             <li><strong>Lab_GC</strong> - Lab/location where GC was run.</li>
-            <li><strong>Concent_CH4 (%)</strong> - Methane concentration in headspace from GC (%).</li>
+            <li><strong>Concent_CH4 (%)</strong> - Methane concentration in the headspace from GC (%).</li>
             <li><strong>V_vial (mL)</strong> - Total vial volume.</li>
-            <li><strong>Density (g/mL)</strong> - Density of sample/sludge.</li>
             <li><strong>V_headspace (mL)</strong> - Headspace volume in mL.</li>
             <li><strong>V_poison (mL)</strong> - Poison/reagent volume, e.g. NaOH.</li>
             <li><strong>V_sludge (mL)</strong> - Sludge volume in mL.</li>
+            <li><strong>Cg (vol CH4/vol sample)</strong> - Methane fraction from GC %, auto-calculated if missing.</li>
             <li><strong>Total_P (atm)</strong> - Total pressure in atm.</li>
-            <li><strong>R (L atm/K mol)</strong> - Gas constant, normally 0.082.</li>
-            <li><strong>T (°C)</strong> - Temperature in Celsius.</li>
-            <li><strong>MW (g/mol)</strong> - Methane molecular weight, normally 16.04.</li>
-            <li><strong>Bunsen 21°C</strong> - Bunsen coefficient for methane at 21°C, e.g. 0.0336.</li>
+            <li><strong>Pg (atm CH4)</strong> - Methane partial pressure, auto-calculated if missing.</li>
+            <li><strong>Molar_water (mol/L)</strong> - Usually 55.5 mol/L.</li>
+            <li><strong>T_reference (K)</strong> - Usually 273.15 K.</li>
+            <li><strong>T_sample (°C)</strong> - Sample temperature in Celsius.</li>
+            <li><strong>T_sample (K)</strong> - Sample temperature in Kelvin, auto-calculated if missing.</li>
+            <li><strong>Kh (atm/molfraction)</strong> - Henry constant used for methane.</li>
+            <li><strong>Molecular_mass_CH4</strong> - Usually 16.04 g/mol.</li>
+            <li><strong>Standard volume at NTP (L/mol)</strong> - Usually 22.4 L/mol.</li>
           </ul>
-          <p class="mb-0"><strong>Auto-calculated outputs:</strong> P_CH4_hs, n_CH4_hs, m_CH4_hs, C_CH4_hs, n_CH4_liq, m_CH4_liq, C_CH4_liq, TC_065.</p>
+          <p class="mb-0"><strong>Auto-calculated outputs:</strong> Cg, Pg, T_sample (K), C_A, C_AH, TC.</p>
         </div>
       </div>
     </div>
@@ -118,7 +119,7 @@
   <section id="boxPlotSection" class="text-center my-4">
     <h2>Total Methane Content Box Plot (Site & Reference Category)</h2>
     <div class="d-flex justify-content-center align-items-center mb-3">
-      <label for="siteFilter" class="me-2">Select Site:</label>
+      <label for="siteFilter" class="me-2">Select Site / Lab:</label>
       <select id="siteFilter" class="form-select" style="max-width: 300px;"></select>
     </div>
     <div class="d-flex justify-content-center align-items-center mb-3">
@@ -220,91 +221,69 @@
     }
 
     function getChartValue(row) {
-      const value = parseFloat(row.TC_065);
+      const value = parseFloat(row.TC);
       return isNaN(value) ? NaN : value;
     }
 
-    // --- 065 Calculation Logic ---
+    // --- Corrected 065 Calculation Logic ---
     function calculateGases(row) {
       const results = {
-        "P_CH4 hs": "N/A",
-        "V_headspace (L)": "N/A",
-        "V_sludge (L)": "N/A",
-        "P_CH4 hs x V_hs": "N/A",
-        "P_CH4 x V_hs x P_hs": "N/A",
-        "T (K)": "N/A",
-        "n_CH4 hs (mol)": "N/A",
-        "m_CH4 hs (mg)": "N/A",
-        "C_CH4 hs (mg/L)": "N/A",
-        "P_CH4 x V_w": "N/A",
-        "n_CH4 liq (mol)": "N/A",
-        "m_CH4 liq (mg)": "N/A",
-        "C_CH4 liq (mg/L)": "N/A",
-        "TC_065": "N/A",
+        "Cg  (vol CH4/vol sample)": "N/A",
+        "Pg (atm CH4)": "N/A",
+        "T_sample (K)": "N/A",
+        "C_A (mg/L)": "N/A",
+        "C_AH (mg/L)": "N/A",
+        "TC (mg/L)": "N/A",
 
-        // Keep old output names populated for existing charts/export compatibility.
+        // Compatibility columns for original chart logic.
         "Cal": "N/A",
         "Cah": "N/A",
-        "TC": "N/A",
-        "Cal_CO2": "N/A",
-        "Cah_CO2": "N/A",
-        "TC_CO2": "N/A"
+        "TC": "N/A"
       };
 
       try {
-        const concentCH4 = getNumber(row, ["Concent_CH4 (%)", "Cgv", "CH4%", "Methane (%)"]);
+        const concentCH4 = getNumber(row, ["Concent_CH4 (%)", "Concent_CH4", "Cgv", "CH4%", "Methane (%)"]);
         const vHeadspaceMl = getNumber(row, ["V_headspace (mL)", "V_headspace", "V_hs", "V_hs (mL)"]);
         const vSludgeMl = getNumber(row, ["V_sludge (mL)", "V_sludge", "V_liquid (mL)"]);
         const totalPressureAtm = getNumber(row, ["Total_P (atm)", "Total_P", "P", "Pressure (atm)"], 1);
-        const gasConstant = getNumber(row, ["R (L atm/K mol)", "R"], 0.082);
-        const tempC = getNumber(row, ["T (°C)", "T", "Temperature (°C)"], 21);
-        const mw = getNumber(row, ["MW (g/mol)", "MW"], 16.04);
-        const bunsen = getNumber(row, ["Bunsen 21°C", "Bunsen", "Bunsen 21C"], 0.0336);
+        const molarWater = getNumber(row, ["Molar_water (mol/L)", "Molar_water", "Molar water"], 55.5);
+        const tReferenceK = getNumber(row, ["T_reference (K)", "T_reference", "T ref (K)"], 273.15);
+        const tSampleC = getNumber(row, ["T_sample (°C)", "T_sample", "T (°C)", "T"], 21);
+        const tSampleKInput = getNumber(row, ["T_sample (K)", "T_K", "T sample K"]);
+        const kh = getNumber(row, ["Kh (atm/molfraction)", "Kh", "Henry constant", "Henry's constant"], 36407.576);
+        const molecularMassCH4 = getNumber(row, ["Molecular_mass_CH4", "Molecular mass CH4", "MW", "MW (g/mol)"], 16.04);
+        const standardVolumeNTP = getNumber(row, ["Standard volume at NTP (L/mol)", "Standard volume at NTP", "Standard_volume_NTP", "Vm"], 22.4);
 
         if (isNaN(concentCH4) || isNaN(vHeadspaceMl) || isNaN(vSludgeMl) || vHeadspaceMl <= 0 || vSludgeMl <= 0) {
           return results;
         }
 
-        const pCH4 = concentCH4 / 100;
-        const vHeadspaceL = vHeadspaceMl / 1000;
-        const vSludgeL = vSludgeMl / 1000;
-        const tempK = tempC + 273.15;
+        const cg = concentCH4 / 100;
+        const pg = cg * totalPressureAtm;
+        const tSampleK = isNaN(tSampleKInput) ? tSampleC + 273.15 : tSampleKInput;
 
-        // Headspace methane using ideal gas law.
-        const pCH4xVhs = pCH4 * vHeadspaceL;
-        const pCH4xVhsxP = pCH4xVhs * totalPressureAtm;
-        const nCH4Hs = pCH4xVhsxP / (gasConstant * tempK);
-        const mCH4HsMg = nCH4Hs * mw * 1000;
-        const cCH4HsMgL = mCH4HsMg / vSludgeL;
+        // Dissolved methane concentration.
+        const cA = (molarWater * pg * molecularMassCH4 * 1000) / kh;
 
-        // Liquid methane using Bunsen coefficient.
-        // This mirrors the spreadsheet logic: Bunsen * P_CH4 * V_sludge(L) = mol CH4 dissolved.
-        const pCH4xVw = pCH4 * vSludgeL;
-        const nCH4Liq = bunsen * pCH4xVw;
-        const mCH4LiqMg = nCH4Liq * mw * 1000;
-        const cCH4LiqMgL = mCH4LiqMg / vSludgeL;
+        // Headspace methane concentration.
+        const cAH =
+          (cg * molecularMassCH4 * 1000 / standardVolumeNTP) *
+          (vHeadspaceMl / vSludgeMl) *
+          (tReferenceK / tSampleK);
 
-        const tc065 = cCH4HsMgL + cCH4LiqMgL;
+        const tc = cA + cAH;
 
-        results["P_CH4 hs"] = Number(pCH4.toFixed(6));
-        results["V_headspace (L)"] = Number(vHeadspaceL.toFixed(6));
-        results["V_sludge (L)"] = Number(vSludgeL.toFixed(6));
-        results["P_CH4 hs x V_hs"] = Number(pCH4xVhs.toFixed(8));
-        results["P_CH4 x V_hs x P_hs"] = Number(pCH4xVhsxP.toFixed(8));
-        results["T (K)"] = Number(tempK.toFixed(3));
-        results["n_CH4 hs (mol)"] = Number(nCH4Hs.toExponential(6));
-        results["m_CH4 hs (mg)"] = Number(mCH4HsMg.toFixed(6));
-        results["C_CH4 hs (mg/L)"] = Number(cCH4HsMgL.toFixed(6));
-        results["P_CH4 x V_w"] = Number(pCH4xVw.toFixed(8));
-        results["n_CH4 liq (mol)"] = Number(nCH4Liq.toExponential(6));
-        results["m_CH4 liq (mg)"] = Number(mCH4LiqMg.toFixed(6));
-        results["C_CH4 liq (mg/L)"] = Number(cCH4LiqMgL.toFixed(6));
-        results["TC_065"] = Number(tc065.toFixed(6));
+        results["Cg  (vol CH4/vol sample)"] = Number(cg.toFixed(6));
+        results["Pg (atm CH4)"] = Number(pg.toFixed(6));
+        results["T_sample (K)"] = Number(tSampleK.toFixed(3));
+        results["C_A (mg/L)"] = Number(cA.toFixed(3));
+        results["C_AH (mg/L)"] = Number(cAH.toFixed(3));
+        results["TC (mg/L)"] = Number(tc.toFixed(3));
 
-        // Compatibility with old table/chart columns.
-        results["Cal"] = results["C_CH4 liq (mg/L)"];
-        results["Cah"] = results["C_CH4 hs (mg/L)"];
-        results["TC"] = results["TC_065"];
+        // Compatibility with old chart/export columns.
+        results["Cal"] = results["C_A (mg/L)"];
+        results["Cah"] = results["C_AH (mg/L)"];
+        results["TC"] = results["TC (mg/L)"];
 
         return results;
       } catch (e) {
@@ -352,20 +331,12 @@
     let availableReferenceCategories = [];
 
     const calculatedCols = [
-      "P_CH4 hs",
-      "V_headspace (L)",
-      "V_sludge (L)",
-      "P_CH4 hs x V_hs",
-      "P_CH4 x V_hs x P_hs",
-      "T (K)",
-      "n_CH4 hs (mol)",
-      "m_CH4 hs (mg)",
-      "C_CH4 hs (mg/L)",
-      "P_CH4 x V_w",
-      "n_CH4 liq (mol)",
-      "m_CH4 liq (mg)",
-      "C_CH4 liq (mg/L)",
-      "TC_065"
+      "Cg  (vol CH4/vol sample)",
+      "Pg (atm CH4)",
+      "T_sample (K)",
+      "C_A (mg/L)",
+      "C_AH (mg/L)",
+      "TC (mg/L)"
     ];
 
     function processSheetData(jsonData) {
@@ -470,7 +441,7 @@
 
       const data = JSON.parse(storedData);
       const originalColumns = JSON.parse(storedColumns);
-      const displayColumns = [...originalColumns, ...calculatedCols];
+      const displayColumns = [...originalColumns, ...calculatedCols.filter(col => !originalColumns.includes(col))];
 
       if(window.dataTableObj) {
         window.dataTableObj.destroy();
@@ -609,7 +580,7 @@
           maintainAspectRatio: false,
           plugins: { title: { display: true, text: 'Total Methane Content by Processing Category' }, legend: { display: false } },
           scales: {
-            y: { title: { display: true, text: 'Total Methane Content 065 (mg/L)' }, beginAtZero: true },
+            y: { title: { display: true, text: 'Total Methane Content (mg/L)' }, beginAtZero: true },
             x: { title: { display: true, text: 'Categories' }, ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } }
           }
         }
@@ -694,7 +665,7 @@
           maintainAspectRatio: false,
           plugins: { title: { display: true, text: `Total Methane Content for ${selectedSite} - Categorized by ${chartTitleCategory}` }, legend: { position: 'top' } },
           scales: {
-            y: { title: { display: true, text: "Total Methane Content 065 (mg/L)" }, beginAtZero: true },
+            y: { title: { display: true, text: "Total Methane Content (mg/L)" }, beginAtZero: true },
             x: { title: { display: true, text: "Date" } }
           }
         }
@@ -743,7 +714,7 @@
           maintainAspectRatio: false,
           plugins: { title: { display: true, text: "Total Methane Content by Time and Poison Type" }, legend: { position: 'top' } },
           scales: {
-            y: { title: { display: true, text: "Total Methane Content 065 (mg/L)" }, beginAtZero: true },
+            y: { title: { display: true, text: "Total Methane Content (mg/L)" }, beginAtZero: true },
             x: { title: { display: true, text: "Time Point (t)" } }
           }
         }
@@ -787,7 +758,7 @@
           maintainAspectRatio: false,
           plugins: { title: { display: true, text: "Total Methane Content by Poison Type" }, legend: { display: false } },
           scales: {
-            y: { title: { display: true, text: "Total Methane Content 065 (mg/L)" }, beginAtZero: true },
+            y: { title: { display: true, text: "Total Methane Content (mg/L)" }, beginAtZero: true },
             x: { title: { display: true, text: "Poison Type" } }
           }
         }
@@ -798,7 +769,7 @@
     document.getElementById("downloadExcel").addEventListener("click", function() {
       const data = JSON.parse(localStorage.getItem("uploadedData")) || [];
       const originalColumns = JSON.parse(localStorage.getItem("tableColumns")) || Object.keys(data[0] || {});
-      const exportHeaders = [...originalColumns, ...calculatedCols];
+      const exportHeaders = [...originalColumns, ...calculatedCols.filter(col => !originalColumns.includes(col))];
 
       const exportData = data.map(row => {
         let newRow = { ...row };
