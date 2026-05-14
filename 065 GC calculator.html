@@ -1,41 +1,35 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:mso="urn:schemas-microsoft-com:office:office" xmlns:msdt="uuid:C2F41010-65B3-11d1-A29F-00AA00C14882">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Bluemethane 065 GC Calculator</title>
+  <title>GC Calculator Version 2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Chart.js and BoxPlot Plugin -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@sgratzl/chartjs-chart-boxplot"></script>
-
   <!-- SheetJS Library for Excel Parsing and Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-  <!-- Simple-DataTables CSS -->
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Simple DataTables -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 
   <style>
     body { margin-top: 20px; }
     .calculator-note { font-size: 0.95rem; }
     .small-muted { font-size: 0.9rem; color: #6c757d; }
+    canvas { max-width: 900px; max-height: 500px; margin: 0 auto; }
   </style>
-
-<!--[if gte mso 9]><xml>
-<mso:CustomDocumentProperties>
-<mso:MediaServiceImageTags msdt:dt="string"></mso:MediaServiceImageTags>
-<mso:lcf76f155ced4ddcb4097134ff3c332f msdt:dt="string"></mso:lcf76f155ced4ddcb4097134ff3c332f>
-<mso:TaxCatchAll msdt:dt="string"></mso:TaxCatchAll>
-</mso:CustomDocumentProperties>
-</xml><![endif]-->
 </head>
 
 <body class="container">
-  <h2 class="text-center">Bluemethane 065 GC Calculator</h2>
-  <p class="text-center text-muted mb-3">Methane calculation using Henry constant for dissolved methane and standard molar volume at NTP for headspace methane.</p>
+  <h2 class="text-center">GC Calculator Version 2</h2>
+  <p class="text-center text-muted mb-3">
+    Methane calculation using sludge density, corrected sludge volume, corrected headspace volume, Henry constant for dissolved methane, and standard molar volume at NTP for headspace methane.
+  </p>
 
   <!-- Navigation -->
   <div class="text-center mb-3">
@@ -44,8 +38,8 @@
         GC Calculators
       </button>
       <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="GC_calculator.html">061 GC Calculator (Original)</a></li>
-        <li><a class="dropdown-item active" href="065 GC calculator.html">065 GC Calculator (New)</a></li>
+        <li><a class="dropdown-item" href="GC_calculator.html">GC Calculator Version 1</a></li>
+        <li><a class="dropdown-item active" href="GC_calculator_version_2.html">GC Calculator Version 2</a></li>
       </ul>
     </div>
 
@@ -56,29 +50,29 @@
   <!-- File Upload Section -->
   <section id="fileUploadSection" class="mt-4 card shadow-sm">
     <div class="card-body text-center">
-      <h5 class="card-title">Upload 065 GC Data</h5>
-      <p class="small-muted">Upload a .xlsx file containing the corrected 065 calculation columns.</p>
-      <input type="file" id="fileInput" accept=".xlsx" class="form-control mx-auto" style="max-width: 400px;">
+      <h5 class="card-title">Upload GC Version 2 Data</h5>
+      <p class="small-muted">
+        Upload a .xlsx file containing the input columns. The calculator will generate the methane calculation columns.
+      </p>
+      <input type="file" id="fileInput" accept=".xlsx" class="form-control mx-auto" style="max-width: 450px;">
       <div class="mt-2 text-center" id="fileUploadStatus"></div>
     </div>
   </section>
 
   <!-- Calculation Summary -->
   <section class="alert alert-secondary mt-4 calculator-note">
-    <strong>065 calculation method:</strong>
-    <br>
-    Methane fraction is calculated as <strong>Cg = Concent_CH4 (%) / 100</strong>.
-    <br>
-    Methane partial pressure is calculated as <strong>Pg = Cg × Total_P</strong>.
-    <br>
-    Dissolved methane is calculated as <strong>C_A = (Molar_water × Pg × Molecular_mass_CH4 × 1000) / Kh</strong>.
-    <br>
-    Headspace methane is calculated as <strong>C_AH = (Cg × Molecular_mass_CH4 × 1000 / Standard volume at NTP) × (V_headspace / V_sludge) × (T_reference / T_sample_K)</strong>.
-    <br>
-    Total methane is calculated as <strong>TC = C_A + C_AH</strong>.
+    <strong>GC Version 2 calculation method:</strong><br>
+    Liquid added to vial = <strong>(Wf - Wi) / Density</strong><br>
+    Sludge volume = <strong>((Wf - Wi) / Density) - Brine_vol - V_poison</strong><br>
+    Headspace volume = <strong>V_vial - ((Wf - Wi) / Density)</strong><br>
+    Methane fraction = <strong>Cg = Concent_CH4 (%) / 100</strong><br>
+    Methane partial pressure = <strong>Pg = Cg × Total_P</strong><br>
+    Dissolved methane = <strong>C_A = (Molar_water × Pg × Molecular_mass_CH4 × 1000) / Kh</strong><br>
+    Headspace methane = <strong>C_AH = (Cg × Molecular_mass_CH4 × 1000 / Standard volume at NTP) × (V_headspace / V_sludge) × (T_reference / T_sample_K)</strong><br>
+    Total methane = <strong>TC = C_A + C_AH</strong>
   </section>
 
-  <!-- Column Definitions Section -->
+  <!-- Column Definitions -->
   <section id="columnDefinitionsSection" class="accordion mt-4">
     <div class="accordion-item">
       <h2 class="accordion-header" id="columnDefinitionsHeading">
@@ -88,70 +82,56 @@
       </h2>
       <div id="columnDefinitionsBody" class="accordion-collapse collapse" aria-labelledby="columnDefinitionsHeading">
         <div class="accordion-body">
+          <p><strong>Expected input columns:</strong></p>
           <ul>
-            <li><strong>Sample_name</strong> - Sample identifier.</li>
-            <li><strong>Sampling Technique</strong> - e.g. HS in field, prefilled NaOH + sludge.</li>
+            <li><strong>Sampling date</strong> - Sampling date.</li>
             <li><strong>Date_GC</strong> - GC analysis date.</li>
+            <li><strong>Sample_name</strong> - Sample identifier.</li>
+            <li><strong>Sampling Technique</strong> - Sampling method.</li>
             <li><strong>Lab_GC</strong> - Lab/location where GC was run.</li>
-            <li><strong>Concent_CH4 (%)</strong> - Methane concentration in the headspace from GC (%).</li>
+            <li><strong>Concent_CH4 (%)</strong> - Methane concentration from GC.</li>
+            <li><strong>Wi (g)</strong> - Empty vial and cap weight.</li>
+            <li><strong>Wf (g)</strong> - Vial, cap, and liquid weight.</li>
+            <li><strong>Density (g/ml)</strong> - Sludge/sample density. If blank, calculator assumes 1 g/mL.</li>
+            <li><strong>Brine_vol (mL)</strong> - Brine volume added.</li>
             <li><strong>V_vial (mL)</strong> - Total vial volume.</li>
-            <li><strong>V_headspace (mL)</strong> - Headspace volume in mL.</li>
-            <li><strong>V_poison (mL)</strong> - Poison/reagent volume, e.g. NaOH.</li>
-            <li><strong>V_sludge (mL)</strong> - Sludge volume in mL.</li>
-            <li><strong>Cg (vol CH4/vol sample)</strong> - Methane fraction from GC %, auto-calculated if missing.</li>
-            <li><strong>Total_P (atm)</strong> - Total pressure in atm.</li>
-            <li><strong>Pg (atm CH4)</strong> - Methane partial pressure, auto-calculated if missing.</li>
-            <li><strong>Molar_water (mol/L)</strong> - Usually 55.5 mol/L.</li>
-            <li><strong>T_reference (K)</strong> - Usually 273.15 K.</li>
-            <li><strong>T_sample (°C)</strong> - Sample temperature in Celsius.</li>
-            <li><strong>T_sample (K)</strong> - Sample temperature in Kelvin, auto-calculated if missing.</li>
-            <li><strong>Kh (atm/molfraction)</strong> - Henry constant used for methane.</li>
-            <li><strong>Molecular_mass_CH4</strong> - Usually 16.04 g/mol.</li>
-            <li><strong>Standard volume at NTP (L/mol)</strong> - Usually 22.4 L/mol.</li>
+            <li><strong>V_poison (mL)</strong> - Poison/reagent volume added.</li>
           </ul>
-          <p class="mb-0"><strong>Auto-calculated outputs:</strong> Cg, Pg, T_sample (K), C_A, C_AH, TC.</p>
+          <p><strong>Calculated columns:</strong></p>
+          <ul>
+            <li>V_headspace (mL)</li>
+            <li>V_sludge (mL)</li>
+            <li>Cg  (vol CH4/vol sample)</li>
+            <li>Total_P (atm)</li>
+            <li>Pg (atm CH4)</li>
+            <li>Molar_water (mol/L)</li>
+            <li>T_reference (K)</li>
+            <li>T_sample (°C)</li>
+            <li>T_sample (K)</li>
+            <li>Kh (atm/molfraction)</li>
+            <li>Molecular_mass_CH4 (g/mol)</li>
+            <li>Standard volume at NTP (L/mol)</li>
+            <li>C_A (mg/L)</li>
+            <li>C_AH (mg/L)</li>
+            <li>TC (mg/L)</li>
+          </ul>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Box Plot Section 1 -->
-  <section id="boxPlotSection" class="text-center my-4">
-    <h2>Total Methane Content Box Plot (Site & Reference Category)</h2>
-    <div class="d-flex justify-content-center align-items-center mb-3">
-      <label for="siteFilter" class="me-2">Select Site / Lab:</label>
-      <select id="siteFilter" class="form-select" style="max-width: 300px;"></select>
-    </div>
-    <div class="d-flex justify-content-center align-items-center mb-3">
-      <label for="referenceCategory" class="me-2">Categorize by:</label>
-      <select id="referenceCategory" class="form-select" style="max-width: 300px;">
-        <option value="none">None</option>
-      </select>
-    </div>
-    <canvas id="boxPlotChart" width="600" height="400" style="max-width: 600px; max-height: 400px; margin: 0 auto;"></canvas>
-  </section>
-
-  <!-- Box Plot Section 2 -->
-  <section id="boxPlotSection2" class="text-center my-4">
-    <h2>Total Methane Content Box Plot (Time & Poison)</h2>
-    <canvas id="boxPlotChart2" width="600" height="400" style="max-width: 600px; max-height: 400px; margin: 0 auto;"></canvas>
-  </section>
-
-  <!-- Box Plot Section 3 -->
-  <section id="boxPlotSection3" class="text-center my-4">
-    <h2>Total Methane Content Box Plot (Poison Type)</h2>
-    <canvas id="boxPlotChart3" width="600" height="400" style="max-width: 600px; max-height: 400px; margin: 0 auto;"></canvas>
-  </section>
-
-  <!-- Combined Category Box Plot Section -->
-  <section id="combinedCategoryBoxPlotSection" class="text-center my-4">
-    <h2>Total Methane Content Box Plot (Vortex, Sonication, Brine, Heat)</h2>
-    <canvas id="combinedCategoryBoxPlotChart" width="800" height="400" style="max-width: 800px; max-height: 400px; margin: 0 auto;"></canvas>
+  <!-- Validation Scatter Plot -->
+  <section id="validationPlotSection" class="text-center my-4">
+    <h3>Validation Scatter Plot</h3>
+    <p class="small-muted">
+      If your Excel file already contains an existing CH4/TC value, this plot compares Excel values against calculator values.
+    </p>
+    <canvas id="validationScatterPlot" width="900" height="500"></canvas>
   </section>
 
   <!-- Data Table Section -->
   <section id="dataTableSection" class="mt-4">
-    <h3>Extracted Data:</h3>
+    <h3>Calculated Data</h3>
     <div class="table-responsive">
       <table id="dataTableTable" class="table table-bordered mt-2">
         <thead class="table-dark">
@@ -163,8 +143,8 @@
   </section>
 
   <!-- Download Section -->
-  <section id="downloadSection" class="mt-3 d-flex justify-content-between align-items-center">
-    <button id="downloadExcel" class="btn btn-primary">Download Table as Excel</button>
+  <section id="downloadSection" class="mt-3 mb-5 d-flex justify-content-between align-items-center">
+    <button id="downloadExcel" class="btn btn-primary">Download Calculated Table as Excel</button>
   </section>
 
   <!-- Sheet Selection Modal -->
@@ -187,157 +167,220 @@
   </div>
 
   <script>
-    // --- Utility Functions ---
+    // =========================
+    // Utility functions
+    // =========================
+
     function parseNumber(value) {
       if (value === null || value === undefined || value === "") return NaN;
       if (typeof value === "number") return value;
-      return parseFloat(String(value).replace(",", "."));
+
+      // Handles comma decimals such as 2,93 and removes accidental spaces.
+      const cleanedValue = String(value).trim().replace(",", ".");
+      return parseFloat(cleanedValue);
     }
 
-    function getValue(row, possibleNames) {
-      const keys = Object.keys(row);
-      for (const wanted of possibleNames) {
-        const matchedKey = keys.find(key => key.trim().toLowerCase() === wanted.trim().toLowerCase());
+    function getValue(row, possibleColumnNames) {
+      const rowKeys = Object.keys(row);
+
+      for (const wantedColumnName of possibleColumnNames) {
+        const matchedKey = rowKeys.find(existingKey =>
+          existingKey.trim().toLowerCase() === wantedColumnName.trim().toLowerCase()
+        );
+
         if (matchedKey !== undefined) return row[matchedKey];
       }
+
       return undefined;
     }
 
-    function getNumber(row, possibleNames, defaultValue = NaN) {
-      const value = getValue(row, possibleNames);
-      const parsed = parseNumber(value);
-      return isNaN(parsed) ? defaultValue : parsed;
+    function getNumber(row, possibleColumnNames, defaultValue = NaN) {
+      const value = getValue(row, possibleColumnNames);
+      const parsedValue = parseNumber(value);
+      return isNaN(parsedValue) ? defaultValue : parsedValue;
     }
 
     function formatExcelDate(serial) {
-      if(isNaN(serial)) return "N/A";
-      var utc_days = Math.floor(serial - 25569);
-      var utc_value = utc_days * 86400;
-      var date_info = new Date(utc_value * 1000);
-      var day = date_info.getDate().toString().padStart(2, '0');
-      var month = (date_info.getMonth() + 1).toString().padStart(2, '0');
-      var year = date_info.getFullYear();
+      if (isNaN(serial)) return serial || "";
+      const utcDays = Math.floor(serial - 25569);
+      const utcValue = utcDays * 86400;
+      const dateInfo = new Date(utcValue * 1000);
+      const day = dateInfo.getDate().toString().padStart(2, '0');
+      const month = (dateInfo.getMonth() + 1).toString().padStart(2, '0');
+      const year = dateInfo.getFullYear();
       return `${day}/${month}/${year}`;
     }
 
-    function getChartValue(row) {
-      const value = parseFloat(row.TC);
-      return isNaN(value) ? NaN : value;
+    function roundNumber(value, decimals = 3) {
+      if (isNaN(value)) return "N/A";
+      return Number(value.toFixed(decimals));
     }
 
-    // --- Corrected 065 Calculation Logic ---
-    function calculateGases(row) {
+    function getChartValue(row) {
+      const calculatorValue = parseNumber(row["TC (mg/L)"]);
+      return isNaN(calculatorValue) ? NaN : calculatorValue;
+    }
+
+    function getExistingExcelMethaneValue(row) {
+      // This allows validation against different possible names in the Excel.
+      // If the Excel already contains TC (mg/L), the original value is copied into Excel_TC_before_calculation before recalculation.
+      return getNumber(row, [
+        "Excel_TC_before_calculation",
+        "Excel CH4 (mg/L)",
+        "CH4 (mg/L)",
+        "TC Excel (mg/L)",
+        "TC from Excel (mg/L)",
+        "Original TC (mg/L)"
+      ]);
+    }
+
+    // =========================
+    // GC Calculator Version 2
+    // =========================
+
+    function calculateMethane(row) {
       const results = {
+        "Density (g/ml)": "N/A",
+        "V_headspace (mL)": "N/A",
+        "V_sludge (mL)": "N/A",
         "Cg  (vol CH4/vol sample)": "N/A",
+        "Total_P (atm)": "N/A",
         "Pg (atm CH4)": "N/A",
+        "Molar_water (mol/L)": "N/A",
+        "T_reference (K)": "N/A",
+        "T_sample (°C)": "N/A",
         "T_sample (K)": "N/A",
+        "Kh (atm/molfraction)": "N/A",
+        "Molecular_mass_CH4 (g/mol)": "N/A",
+        "Standard volume at NTP (L/mol)": "N/A",
         "C_A (mg/L)": "N/A",
         "C_AH (mg/L)": "N/A",
-        "TC (mg/L)": "N/A",
-
-        // Compatibility columns for original chart logic.
-        "Cal": "N/A",
-        "Cah": "N/A",
-        "TC": "N/A"
+        "TC (mg/L)": "N/A"
       };
 
       try {
-        const concentCH4 = getNumber(row, ["Concent_CH4 (%)", "Concent_CH4", "Cgv", "CH4%", "Methane (%)"]);
-        const vHeadspaceMl = getNumber(row, ["V_headspace (mL)", "V_headspace", "V_hs", "V_hs (mL)"]);
-        const vSludgeMl = getNumber(row, ["V_sludge (mL)", "V_sludge", "V_liquid (mL)"]);
-        const totalPressureAtm = getNumber(row, ["Total_P (atm)", "Total_P", "P", "Pressure (atm)"], 1);
-        const molarWater = getNumber(row, ["Molar_water (mol/L)", "Molar_water", "Molar water"], 55.5);
-        const tReferenceK = getNumber(row, ["T_reference (K)", "T_reference", "T ref (K)"], 273.15);
-        const tSampleC = getNumber(row, ["T_sample (°C)", "T_sample", "T (°C)", "T"], 21);
-        const tSampleKInput = getNumber(row, ["T_sample (K)", "T_K", "T sample K"]);
-        const kh = getNumber(row, ["Kh (atm/molfraction)", "Kh", "Henry constant", "Henry's constant"], 36407.576);
-        const molecularMassCH4 = getNumber(row, ["Molecular_mass_CH4", "Molecular mass CH4", "MW", "MW (g/mol)"], 16.04);
-        const standardVolumeNTP = getNumber(row, ["Standard volume at NTP (L/mol)", "Standard volume at NTP", "Standard_volume_NTP", "Vm"], 22.4);
+        // Input values from Excel.
+        const methaneConcentrationPercent = getNumber(row, ["Concent_CH4 (%)", "Concent_CH4", "CH4%", "Methane (%)"]);
+        const emptyVialWeightG = getNumber(row, ["Wi (g)", "Wi", "empty vial weight", "empty vial weight (g)"]);
+        const fullVialWeightG = getNumber(row, ["Wf (g)", "Wf", "full vial weight", "full vial weight (g)"]);
+        const sludgeDensityGPerMl = getNumber(row, ["Density (g/ml)", "Density (g/mL)", "Density", "sludge density"], 1);
+        const brineVolumeMl = getNumber(row, ["Brine_vol (mL)", "Brine_vol", "Brine volume (mL)", "brine"], 0);
+        const vialVolumeMl = getNumber(row, ["V_vial (mL)", "V_vial", "Vial volume (mL)"]);
+        const poisonVolumeMl = getNumber(row, ["V_poison (mL)", "V_poison", "Poison volume (mL)", "poison volume"], 0);
 
-        if (isNaN(concentCH4) || isNaN(vHeadspaceMl) || isNaN(vSludgeMl) || vHeadspaceMl <= 0 || vSludgeMl <= 0) {
+        // Constants/defaults. If provided in Excel, they are used; otherwise defaults are used.
+        const totalPressureAtm = getNumber(row, ["Total_P (atm)", "Total_P", "Pressure (atm)", "P"], 1);
+        const molarWaterMolPerL = getNumber(row, ["Molar_water (mol/L)", "Molar_water", "Molar water"], 55.5);
+        const referenceTemperatureK = getNumber(row, ["T_reference (K)", "T_reference", "T ref (K)"], 273.15);
+        const sampleTemperatureC = getNumber(row, ["T_sample (°C)", "T_sample", "T (°C)", "Temperature (°C)"], 21);
+        const sampleTemperatureKInput = getNumber(row, ["T_sample (K)", "T_K", "T sample K"]);
+        const henryConstantAtmPerMoleFraction = getNumber(row, ["Kh (atm/molfraction)", "Kh", "Henry constant", "Henry's constant"], 36407.576);
+        const methaneMolecularMassGPerMol = getNumber(row, ["Molecular_mass_CH4 (g/mol)", "Molecular_mass_CH4", "Molecular mass CH4", "MW", "MW (g/mol)"], 16.04);
+        const standardMolarVolumeNtpLPerMol = getNumber(row, ["Standard volume at NTP (L/mol)", "Standard volume at NTP", "Standard_volume_NTP", "Vm"], 22.4);
+
+        // Minimum required values.
+        if (
+          isNaN(methaneConcentrationPercent) ||
+          isNaN(emptyVialWeightG) ||
+          isNaN(fullVialWeightG) ||
+          isNaN(sludgeDensityGPerMl) ||
+          sludgeDensityGPerMl <= 0 ||
+          isNaN(vialVolumeMl) ||
+          vialVolumeMl <= 0
+        ) {
           return results;
         }
 
-        const cg = concentCH4 / 100;
-        const pg = cg * totalPressureAtm;
-        const tSampleK = isNaN(tSampleKInput) ? tSampleC + 273.15 : tSampleKInput;
+        // Volume calculations.
+        const totalLiquidVolumeMl = (fullVialWeightG - emptyVialWeightG) / sludgeDensityGPerMl;
+        const sludgeVolumeMl = totalLiquidVolumeMl - brineVolumeMl - poisonVolumeMl;
+        const headspaceVolumeMl = vialVolumeMl - totalLiquidVolumeMl;
 
-        // Dissolved methane concentration.
-        const cA = (molarWater * pg * molecularMassCH4 * 1000) / kh;
+        if (sludgeVolumeMl <= 0 || headspaceVolumeMl <= 0) {
+          return results;
+        }
 
-        // Headspace methane concentration.
-        const cAH =
-          (cg * molecularMassCH4 * 1000 / standardVolumeNTP) *
-          (vHeadspaceMl / vSludgeMl) *
-          (tReferenceK / tSampleK);
+        // Methane calculations.
+        const methaneGasFraction = methaneConcentrationPercent / 100;
+        const methanePartialPressureAtm = methaneGasFraction * totalPressureAtm;
+        const sampleTemperatureK = isNaN(sampleTemperatureKInput) ? sampleTemperatureC + 273.15 : sampleTemperatureKInput;
 
-        const tc = cA + cAH;
+        const dissolvedMethaneMgPerL =
+          (molarWaterMolPerL * methanePartialPressureAtm * methaneMolecularMassGPerMol * 1000) /
+          henryConstantAtmPerMoleFraction;
 
-        results["Cg  (vol CH4/vol sample)"] = Number(cg.toFixed(6));
-        results["Pg (atm CH4)"] = Number(pg.toFixed(6));
-        results["T_sample (K)"] = Number(tSampleK.toFixed(3));
-        results["C_A (mg/L)"] = Number(cA.toFixed(3));
-        results["C_AH (mg/L)"] = Number(cAH.toFixed(3));
-        results["TC (mg/L)"] = Number(tc.toFixed(3));
+        const headspaceMethaneMgPerL =
+          (methaneGasFraction * methaneMolecularMassGPerMol * 1000 / standardMolarVolumeNtpLPerMol) *
+          (headspaceVolumeMl / sludgeVolumeMl) *
+          (referenceTemperatureK / sampleTemperatureK);
 
-        // Compatibility with old chart/export columns.
-        results["Cal"] = results["C_A (mg/L)"];
-        results["Cah"] = results["C_AH (mg/L)"];
-        results["TC"] = results["TC (mg/L)"];
+        const totalMethaneMgPerL = dissolvedMethaneMgPerL + headspaceMethaneMgPerL;
+
+        results["Density (g/ml)"] = roundNumber(sludgeDensityGPerMl, 3);
+        results["V_headspace (mL)"] = roundNumber(headspaceVolumeMl, 3);
+        results["V_sludge (mL)"] = roundNumber(sludgeVolumeMl, 3);
+        results["Cg  (vol CH4/vol sample)"] = roundNumber(methaneGasFraction, 6);
+        results["Total_P (atm)"] = roundNumber(totalPressureAtm, 3);
+        results["Pg (atm CH4)"] = roundNumber(methanePartialPressureAtm, 6);
+        results["Molar_water (mol/L)"] = roundNumber(molarWaterMolPerL, 3);
+        results["T_reference (K)"] = roundNumber(referenceTemperatureK, 3);
+        results["T_sample (°C)"] = roundNumber(sampleTemperatureC, 2);
+        results["T_sample (K)"] = roundNumber(sampleTemperatureK, 3);
+        results["Kh (atm/molfraction)"] = roundNumber(henryConstantAtmPerMoleFraction, 3);
+        results["Molecular_mass_CH4 (g/mol)"] = roundNumber(methaneMolecularMassGPerMol, 3);
+        results["Standard volume at NTP (L/mol)"] = roundNumber(standardMolarVolumeNtpLPerMol, 3);
+        results["C_A (mg/L)"] = roundNumber(dissolvedMethaneMgPerL, 3);
+        results["C_AH (mg/L)"] = roundNumber(headspaceMethaneMgPerL, 3);
+        results["TC (mg/L)"] = roundNumber(totalMethaneMgPerL, 3);
 
         return results;
-      } catch (e) {
-        console.error("Error in calculateGases:", e);
+      } catch (error) {
+        console.error("Error in calculateMethane:", error);
         return results;
       }
     }
 
+    // =========================
+    // Excel handling
+    // =========================
+
+    let currentWorkbook;
+    let validationChartInstance = null;
+
+    const fileInput = document.getElementById('fileInput');
+    const fileUploadStatus = document.getElementById('fileUploadStatus');
+
+    const calculatedColumns = [
+      "Density (g/ml)",
+      "V_headspace (mL)",
+      "V_sludge (mL)",
+      "Cg  (vol CH4/vol sample)",
+      "Total_P (atm)",
+      "Pg (atm CH4)",
+      "Molar_water (mol/L)",
+      "T_reference (K)",
+      "T_sample (°C)",
+      "T_sample (K)",
+      "Kh (atm/molfraction)",
+      "Molecular_mass_CH4 (g/mol)",
+      "Standard volume at NTP (L/mol)",
+      "C_A (mg/L)",
+      "C_AH (mg/L)",
+      "TC (mg/L)"
+    ];
+
     function getVisibleDataFromSheet(worksheet) {
-      let hiddenRowCount = 0;
       const hiddenRowIndices = new Set();
 
       if (worksheet['!rows']) {
         worksheet['!rows'].forEach((row, index) => {
-          if (row && row.hidden) {
-            hiddenRowCount++;
-            hiddenRowIndices.add(index);
-          }
+          if (row && row.hidden) hiddenRowIndices.add(index);
         });
-      }
-
-      let hiddenColCount = 0;
-      if (worksheet['!cols']) {
-        worksheet['!cols'].forEach(col => {
-          if (col && col.hidden) hiddenColCount++;
-        });
-      }
-
-      if (hiddenRowCount > 0 || hiddenColCount > 0) {
-        let alertMessage = [];
-        const hiddenDataRowCount = Array.from(hiddenRowIndices).filter(i => i > 0).length;
-        if (hiddenDataRowCount > 0) alertMessage.push(`${hiddenDataRowCount} hidden data row(s)`);
-        if (hiddenColCount > 0) alertMessage.push(`${hiddenColCount} hidden column(s)`);
-        if (alertMessage.length > 0) alert(`${alertMessage.join(' and ')} were found and have been excluded from the import.`);
       }
 
       const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
       return jsonData.filter((row, index) => !hiddenRowIndices.has(index + 1));
     }
-
-    // --- Data Handling Functions ---
-    let currentWorkbook;
-    const fileInput = document.getElementById('fileInput');
-    const fileUploadStatus = document.getElementById('fileUploadStatus');
-    let availableReferenceCategories = [];
-
-    const calculatedCols = [
-      "Cg  (vol CH4/vol sample)",
-      "Pg (atm CH4)",
-      "T_sample (K)",
-      "C_A (mg/L)",
-      "C_AH (mg/L)",
-      "TC (mg/L)"
-    ];
 
     function processSheetData(jsonData) {
       if (!jsonData || jsonData.length === 0) {
@@ -345,18 +388,32 @@
         return;
       }
 
-      fileUploadStatus.textContent = "Data processed successfully.";
       let originalColumns = Object.keys(jsonData[0]);
-      const processedData = jsonData.map(row => ({ ...row, ...calculateGases(row) }));
+
+      const processedData = jsonData.map(row => {
+        const rowCopy = { ...row };
+
+        // Preserve Excel TC before overwriting it, so the scatter plot can validate calculator vs Excel.
+        if (rowCopy["TC (mg/L)"] !== undefined && rowCopy["TC (mg/L)"] !== "") {
+          rowCopy["Excel_TC_before_calculation"] = rowCopy["TC (mg/L)"];
+        }
+
+        return {
+          ...rowCopy,
+          ...calculateMethane(rowCopy)
+        };
+      });
+
+      if (!originalColumns.includes("Excel_TC_before_calculation") && processedData.some(row => row["Excel_TC_before_calculation"] !== undefined)) {
+        originalColumns = [...originalColumns, "Excel_TC_before_calculation"];
+      }
 
       localStorage.setItem("uploadedData", JSON.stringify(processedData));
       localStorage.setItem("tableColumns", JSON.stringify(originalColumns));
 
+      fileUploadStatus.textContent = "Data processed successfully.";
       loadTableData();
-      setupBoxPlot(processedData, originalColumns);
-      setupSecondBoxPlot(processedData, originalColumns);
-      setupThirdBoxPlot(processedData, originalColumns);
-      setupCombinedCategoryBoxPlot(processedData, originalColumns);
+      setupValidationScatterPlot(processedData);
       fileInput.value = '';
     }
 
@@ -366,17 +423,21 @@
 
       reader.onload = function(e) {
         const data = new Uint8Array(e.target.result);
+
         try {
           currentWorkbook = XLSX.read(data, { type: 'array', cellStyles: true });
+
           if (currentWorkbook.SheetNames.length > 1) {
             const sheetList = document.getElementById('sheetList');
             sheetList.innerHTML = '';
+
             currentWorkbook.SheetNames.forEach(sheetName => {
               const option = document.createElement('option');
               option.value = sheetName;
               option.textContent = sheetName;
               sheetList.appendChild(option);
             });
+
             const sheetSelectionModal = new bootstrap.Modal(document.getElementById('sheetSelectionModal'));
             sheetSelectionModal.show();
           } else if (currentWorkbook.SheetNames.length === 1) {
@@ -392,8 +453,6 @@
           console.error("Error reading Excel file:", error);
           fileUploadStatus.textContent = "Error reading Excel file. Please ensure it is a valid .xlsx file.";
           alert("Error processing Excel file. Please check the file format and try again.");
-        } finally {
-          fileInput.value = '';
         }
       };
 
@@ -401,7 +460,6 @@
         console.error("FileReader error:", error);
         fileUploadStatus.textContent = "Error reading the file.";
         alert("Failed to read the file. Please try again.");
-        fileInput.value = '';
       };
 
       reader.readAsArrayBuffer(file);
@@ -411,6 +469,7 @@
       fileUploadStatus.textContent = "";
       const file = e.target.files[0];
       if (!file) return;
+
       if (file.name.endsWith('.xlsx')) {
         handleExcelUpload(file);
       } else {
@@ -425,14 +484,14 @@
       const worksheet = currentWorkbook.Sheets[selectedSheetName];
       const jsonData = getVisibleDataFromSheet(worksheet);
       processSheetData(jsonData);
+
       const sheetSelectionModal = bootstrap.Modal.getInstance(document.getElementById('sheetSelectionModal'));
       sheetSelectionModal.hide();
     });
 
-    window.addEventListener('beforeunload', function() {
-      localStorage.removeItem('uploadedData');
-      localStorage.removeItem('tableColumns');
-    });
+    // =========================
+    // Table display
+    // =========================
 
     function loadTableData() {
       const storedData = localStorage.getItem("uploadedData");
@@ -441,50 +500,50 @@
 
       const data = JSON.parse(storedData);
       const originalColumns = JSON.parse(storedColumns);
-      const displayColumns = [...originalColumns, ...calculatedCols.filter(col => !originalColumns.includes(col))];
+      const displayColumns = [...originalColumns, ...calculatedColumns.filter(col => !originalColumns.includes(col))];
 
-      if(window.dataTableObj) {
+      if (window.dataTableObj) {
         window.dataTableObj.destroy();
         window.dataTableObj = null;
       }
 
-      const thead = document.getElementById("tableHeaders");
-      thead.innerHTML = "";
-      displayColumns.forEach(col => {
+      const tableHeaders = document.getElementById("tableHeaders");
+      tableHeaders.innerHTML = "";
+
+      displayColumns.forEach(columnName => {
         const th = document.createElement("th");
-        th.textContent = col;
-        thead.appendChild(th);
+        th.textContent = columnName;
+        tableHeaders.appendChild(th);
       });
 
-      const tbody = document.getElementById("dataTable");
-      tbody.innerHTML = "";
+      const tableBody = document.getElementById("dataTable");
+      tableBody.innerHTML = "";
+
       data.forEach(row => {
         const tr = document.createElement("tr");
-        displayColumns.forEach(col => {
-          const td = document.createElement("td");
-          let val = row[col];
 
-          if ((col === "Sampling date" || col === "Date_GC") && val) {
-            if(!isNaN(val)) {
-              val = formatExcelDate(val);
-            } else if (typeof val === 'string') {
-              let parsedDate = new Date(val);
-              if (!isNaN(parsedDate.getTime())) {
-                const day = parsedDate.getDate().toString().padStart(2, '0');
-                const month = (parsedDate.getMonth() + 1).toString().padStart(2, '0');
-                const year = parsedDate.getFullYear();
-                val = `${day}/${month}/${year}`;
-              }
+        displayColumns.forEach(columnName => {
+          const td = document.createElement("td");
+          let cellValue = row[columnName];
+
+          if ((columnName === "Sampling date" || columnName === "Date_GC") && cellValue) {
+            if (!isNaN(cellValue)) {
+              cellValue = formatExcelDate(cellValue);
             }
-          } else if (calculatedCols.includes(col) && !isNaN(val)) {
-            const num = parseFloat(val);
-            val = Math.abs(num) < 0.001 && num !== 0 ? num.toExponential(3) : num.toFixed(3);
           }
 
-          td.textContent = val !== undefined && val !== null ? val : "N/A";
+          if (calculatedColumns.includes(columnName) && !isNaN(parseNumber(cellValue))) {
+            const numericValue = parseNumber(cellValue);
+            cellValue = Math.abs(numericValue) < 0.001 && numericValue !== 0
+              ? numericValue.toExponential(3)
+              : numericValue.toFixed(3);
+          }
+
+          td.textContent = cellValue !== undefined && cellValue !== null ? cellValue : "N/A";
           tr.appendChild(td);
         });
-        tbody.appendChild(tr);
+
+        tableBody.appendChild(tr);
       });
 
       window.dataTableObj = new simpleDatatables.DataTable("#dataTableTable", {
@@ -493,312 +552,123 @@
       });
     }
 
-    // --- Box Plot Functions ---
-    let chartInstance = null;
-    let chartInstance2 = null;
-    let chartInstance3 = null;
-    let combinedCategoryChartInstance = null;
+    // =========================
+    // Validation scatter plot
+    // =========================
 
-    function displayNoChartDataMessage(message, canvasId) {
-      const ctx = document.getElementById(canvasId).getContext("2d");
-      if (canvasId === 'boxPlotChart' && chartInstance) { chartInstance.destroy(); chartInstance = null; }
-      else if (canvasId === 'boxPlotChart2' && chartInstance2) { chartInstance2.destroy(); chartInstance2 = null; }
-      else if (canvasId === 'boxPlotChart3' && chartInstance3) { chartInstance3.destroy(); chartInstance3 = null; }
-      else if (canvasId === 'combinedCategoryBoxPlotChart' && combinedCategoryChartInstance) { combinedCategoryChartInstance.destroy(); combinedCategoryChartInstance = null; }
+    function setupValidationScatterPlot(data) {
+      const validationPoints = data
+        .map(row => {
+          const excelValue = getExistingExcelMethaneValue(row);
+          const calculatorValue = getChartValue(row);
+          return { x: excelValue, y: calculatorValue };
+        })
+        .filter(point => !isNaN(point.x) && !isNaN(point.y));
 
-      ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-      ctx.font = "16px Arial";
-      ctx.textAlign = "center";
-      ctx.fillText(message, ctx.canvas.width / 2, ctx.canvas.height / 2);
-    }
+      const ctx = document.getElementById("validationScatterPlot").getContext("2d");
 
-    Chart.register({
-      id: 'meanLabelPlugin',
-      afterDatasetsDraw(chart) {
-        const ctx = chart.ctx;
-        chart.data.datasets.forEach((dataset, datasetIndex) => {
-          const meta = chart.getDatasetMeta(datasetIndex);
-          if (!meta.hidden) {
-            meta.data.forEach((element, index) => {
-              const rawData = dataset.data[index];
-              if (Array.isArray(rawData) && rawData.length > 0) {
-                const mean = rawData.reduce((sum, val) => sum + val, 0) / rawData.length;
-                const yPos = chart.scales.y.getPixelForValue(mean);
-                const xPos = element.x;
-                ctx.save();
-                ctx.fillStyle = "black";
-                ctx.font = "12px Arial";
-                ctx.textAlign = "left";
-                ctx.fillText(mean.toFixed(2), xPos + 5, yPos - 5);
-                ctx.restore();
-              }
-            });
-          }
-        });
+      if (validationChartInstance) {
+        validationChartInstance.destroy();
+        validationChartInstance = null;
       }
-    });
 
-    function setupCombinedCategoryBoxPlot(data, columns) {
-      const categoryColumns = ['vortex', 'sonication', 'brine', 'heat'];
-      const chartData = [];
-      const boxLabels = [];
-
-      categoryColumns.forEach(columnName => {
-        if (columns.includes(columnName) && data.some(row => row[columnName] !== undefined && row[columnName] !== null && String(row[columnName]).trim() !== '')) {
-          const categories = [...new Set(data.map(d => d[columnName]).filter(val => val !== undefined && val !== null && String(val).trim() !== ''))].sort();
-          categories.forEach(category => {
-            boxLabels.push(`${columnName.charAt(0).toUpperCase() + columnName.slice(1)} - ${category}`);
-            chartData.push(
-              data.filter(d => String(d[columnName]).trim() === String(category).trim())
-                  .map(d => getChartValue(d))
-                  .filter(val => !isNaN(val))
-            );
-          });
-        }
-      });
-
-      if (boxLabels.length === 0) {
-        displayNoChartDataMessage("No data for Vortex, Sonication, Brine, or Heat.", 'combinedCategoryBoxPlotChart');
+      if (validationPoints.length === 0) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.font = "16px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("No existing Excel CH4/TC values found for validation plot.", ctx.canvas.width / 2, ctx.canvas.height / 2);
         return;
       }
 
-      const ctx = document.getElementById('combinedCategoryBoxPlotChart').getContext('2d');
-      if (combinedCategoryChartInstance) combinedCategoryChartInstance.destroy();
-      combinedCategoryChartInstance = new Chart(ctx, {
-        type: 'boxplot',
+      const allValues = validationPoints.flatMap(point => [point.x, point.y]);
+      const maxValue = Math.max(...allValues) * 1.05;
+
+      validationChartInstance = new Chart(ctx, {
+        type: 'scatter',
         data: {
-          labels: boxLabels,
-          datasets: [{
-            label: 'Categories',
-            data: chartData,
-            backgroundColor: ["rgba(255, 99, 132, 0.5)", "rgba(54, 162, 235, 0.5)", "rgba(255, 206, 86, 0.5)","rgba(75, 192, 192, 0.5)", "rgba(153, 102, 255, 0.5)", "rgba(255, 159, 64, 0.5)", "rgba(148, 0, 211, 0.5)", "rgba(0, 255, 255, 0.5)", "rgba(255, 165, 0, 0.5)","rgba(0, 128, 0, 0.5)", "rgba(218, 112, 214, 0.5)", "rgba(255, 69, 0, 0.5)"],
-            borderWidth: 1
-          }]
+          datasets: [
+            {
+              label: 'Calculator vs Excel',
+              data: validationPoints,
+              pointRadius: 5
+            },
+            {
+              label: '1:1 line',
+              data: [{ x: 0, y: 0 }, { x: maxValue, y: maxValue }],
+              type: 'line',
+              pointRadius: 0,
+              borderWidth: 2
+            }
+          ]
         },
         options: {
           responsive: false,
           maintainAspectRatio: false,
-          plugins: { title: { display: true, text: 'Total Methane Content by Processing Category' }, legend: { display: false } },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Validation: CH4 (mg/L) from Excel vs CH4 (mg/L) from GC Calculator Version 2'
+            },
+            legend: {
+              position: 'top'
+            }
+          },
           scales: {
-            y: { title: { display: true, text: 'Total Methane Content (mg/L)' }, beginAtZero: true },
-            x: { title: { display: true, text: 'Categories' }, ticks: { autoSkip: false, maxRotation: 45, minRotation: 45 } }
+            x: {
+              title: {
+                display: true,
+                text: 'CH4 / TC from Excel (mg/L)'
+              },
+              beginAtZero: true
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'CH4 / TC from GC Calculator Version 2 (mg/L)'
+              },
+              beginAtZero: true
+            }
           }
         }
       });
     }
 
-    function setupBoxPlot(data, columns) {
-      const siteSelect = document.getElementById("siteFilter");
-      const sites = [...new Set(data.map(d => d.Site || d.Lab_GC).filter(Boolean))];
-      siteSelect.innerHTML = "";
-      sites.forEach(site => {
-        const option = document.createElement("option");
-        option.value = site;
-        option.textContent = site;
-        siteSelect.appendChild(option);
-      });
+    // =========================
+    // Export
+    // =========================
 
-      if (sites.length === 0) {
-        displayNoChartDataMessage("No 'Site' or 'Lab_GC' data available.", 'boxPlotChart');
-        return;
-      }
-
-      const referenceCategorySelect = document.getElementById("referenceCategory");
-      referenceCategorySelect.innerHTML = '<option value="none">None</option>';
-      availableReferenceCategories = columns.filter(col => col.startsWith('reference_') || col === 'Sampling Technique' || col === 'Sample_name');
-      availableReferenceCategories.forEach(refCat => {
-        const option = document.createElement('option');
-        option.value = refCat;
-        option.textContent = refCat;
-        referenceCategorySelect.appendChild(option);
-      });
-
-      siteSelect.onchange = () => updateChart(data, siteSelect.value, referenceCategorySelect.value);
-      referenceCategorySelect.onchange = () => updateChart(data, siteSelect.value, referenceCategorySelect.value);
-      updateChart(data, sites[0], referenceCategorySelect.value);
-    }
-
-    function updateChart(data, selectedSite, referenceCategory) {
-      const filteredData = data.filter(d => (d.Site || d.Lab_GC) === selectedSite && d.reference !== "c");
-      if (filteredData.length === 0) {
-        displayNoChartDataMessage(`No data for '${selectedSite}'.`, 'boxPlotChart');
-        return;
-      }
-
-      let uniqueDates = [...new Set(filteredData.map(d => {
-        let dt = d["Sampling date"] || d["Date_GC"];
-        if (!isNaN(dt)) return formatExcelDate(dt);
-        if (typeof dt === 'string') return dt;
-        return null;
-      }))].filter(Boolean);
-
-      let categoryColumn = referenceCategory !== "none" ? referenceCategory : (filteredData[0].hasOwnProperty("sampling point") ? "sampling point" : "Sample_name");
-      let chartTitleCategory = categoryColumn;
-
-      let referencePoints = [...new Set(filteredData.map(d => d[categoryColumn]).filter(val => val !== undefined && val !== null && String(val).trim() !== ''))].sort();
-      if (referencePoints.length === 0) {
-        displayNoChartDataMessage(`No data for '${chartTitleCategory}'.`, 'boxPlotChart');
-        return;
-      }
-
-      const datasets = referencePoints.map((point, idx) => ({
-        label: point || 'N/A',
-        data: uniqueDates.map(date => {
-          const entries = filteredData.filter(d => {
-            const dDate = d["Sampling date"] || d["Date_GC"];
-            const dDateFormatted = !isNaN(dDate) ? formatExcelDate(dDate) : dDate;
-            return dDateFormatted === date && String(d[categoryColumn]).trim() === String(point).trim();
-          });
-          return entries.map(d => getChartValue(d)).filter(val => !isNaN(val));
-        }),
-        backgroundColor: ["rgba(75, 192, 192, 0.5)", "rgba(192, 75, 192, 0.5)", "rgba(192, 192, 75, 0.5)", "rgba(75, 75, 192, 0.5)", "rgba(192, 75, 75, 0.5)", "rgba(75, 192, 75, 0.5)", "rgba(128, 128, 128, 0.5)"][idx % 7],
-        borderWidth: 1
-      }));
-
-      const ctx = document.getElementById("boxPlotChart").getContext("2d");
-      if (chartInstance) chartInstance.destroy();
-      chartInstance = new Chart(ctx, {
-        type: "boxplot",
-        data: { labels: uniqueDates, datasets: datasets },
-        options: {
-          responsive: false,
-          maintainAspectRatio: false,
-          plugins: { title: { display: true, text: `Total Methane Content for ${selectedSite} - Categorized by ${chartTitleCategory}` }, legend: { position: 'top' } },
-          scales: {
-            y: { title: { display: true, text: "Total Methane Content (mg/L)" }, beginAtZero: true },
-            x: { title: { display: true, text: "Date" } }
-          }
-        }
-      });
-    }
-
-    function setupSecondBoxPlot(data, columns) {
-      const tColumns = columns.filter(col => col.startsWith('reference_') && data.some(row => row[col] && /t\d+/i.test(String(row[col]))));
-      const poisonColumnName = columns.find(col => col.toLowerCase() === 'poison');
-
-      if (!poisonColumnName || tColumns.length === 0) {
-        displayNoChartDataMessage("No 'poison' or 't-value' columns found.", 'boxPlotChart2');
-        return;
-      }
-
-      const tValues = [];
-      tColumns.forEach(col => {
-        const uniqueTValuesInColumn = [...new Set(data.map(row => row[col]).filter(val => val && /t\d+/i.test(String(val))))];
-        tValues.push(...uniqueTValuesInColumn);
-      });
-      const uniqueTValues = [...new Set(tValues)].sort((a, b) => parseInt(String(a).substring(1)) - parseInt(String(b).substring(1)));
-      const poisonCategories = [...new Set(data.map(d => d[poisonColumnName]).filter(Boolean))];
-
-      if (poisonCategories.length === 0) {
-        displayNoChartDataMessage("No 'poison' data available.", 'boxPlotChart2');
-        return;
-      }
-
-      const datasets2 = poisonCategories.map((poison, index) => ({
-        label: poison,
-        data: uniqueTValues.map(tValue => {
-          const entries = data.filter(d => String(d[poisonColumnName]).trim() === String(poison).trim() && tColumns.some(tCol => String(d[tCol]).trim() === String(tValue).trim()));
-          return entries.map(d => getChartValue(d)).filter(val => !isNaN(val));
-        }),
-        backgroundColor: ["rgba(255, 99, 132, 0.5)", "rgba(54, 162, 235, 0.5)", "rgba(255, 206, 86, 0.5)","rgba(75, 192, 192, 0.5)", "rgba(153, 102, 255, 0.5)", "rgba(255, 159, 64, 0.5)"][index % 6],
-        borderWidth: 1
-      }));
-
-      const ctx2 = document.getElementById("boxPlotChart2").getContext("2d");
-      if (chartInstance2) chartInstance2.destroy();
-      chartInstance2 = new Chart(ctx2, {
-        type: "boxplot",
-        data: { labels: uniqueTValues, datasets: datasets2 },
-        options: {
-          responsive: false,
-          maintainAspectRatio: false,
-          plugins: { title: { display: true, text: "Total Methane Content by Time and Poison Type" }, legend: { position: 'top' } },
-          scales: {
-            y: { title: { display: true, text: "Total Methane Content (mg/L)" }, beginAtZero: true },
-            x: { title: { display: true, text: "Time Point (t)" } }
-          }
-        }
-      });
-    }
-
-    function setupThirdBoxPlot(data, columns) {
-      const poisonColumnName = columns.find(col => col.toLowerCase() === 'poison');
-      if (!poisonColumnName) {
-        displayNoChartDataMessage("No 'poison' column found.", 'boxPlotChart3');
-        return;
-      }
-
-      const poisonCategories = [...new Set(data.map(d => d[poisonColumnName]).filter(Boolean))];
-      if (poisonCategories.length === 0) {
-        displayNoChartDataMessage("No 'poison' data available.", 'boxPlotChart3');
-        return;
-      }
-
-      const boxPlotData = poisonCategories.map(poison => {
-        return data.filter(d => String(d[poisonColumnName]).trim() === String(poison).trim())
-                   .map(d => getChartValue(d))
-                   .filter(val => !isNaN(val));
-      });
-
-      const ctx3 = document.getElementById("boxPlotChart3").getContext("2d");
-      if (chartInstance3) chartInstance3.destroy();
-      chartInstance3 = new Chart(ctx3, {
-        type: "boxplot",
-        data: {
-          labels: poisonCategories,
-          datasets: [{
-            label: 'Poison Types',
-            data: boxPlotData,
-            backgroundColor: ["rgba(148, 0, 211, 0.5)", "rgba(0, 255, 255, 0.5)", "rgba(255, 165, 0, 0.5)","rgba(0, 128, 0, 0.5)", "rgba(218, 112, 214, 0.5)", "rgba(255, 69, 0, 0.5)"],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: false,
-          maintainAspectRatio: false,
-          plugins: { title: { display: true, text: "Total Methane Content by Poison Type" }, legend: { display: false } },
-          scales: {
-            y: { title: { display: true, text: "Total Methane Content (mg/L)" }, beginAtZero: true },
-            x: { title: { display: true, text: "Poison Type" } }
-          }
-        }
-      });
-    }
-
-    // --- Download Function ---
     document.getElementById("downloadExcel").addEventListener("click", function() {
       const data = JSON.parse(localStorage.getItem("uploadedData")) || [];
+
+      if (data.length === 0) {
+        alert("No data available to download.");
+        return;
+      }
+
       const originalColumns = JSON.parse(localStorage.getItem("tableColumns")) || Object.keys(data[0] || {});
-      const exportHeaders = [...originalColumns, ...calculatedCols.filter(col => !originalColumns.includes(col))];
+      const exportHeaders = [...originalColumns, ...calculatedColumns.filter(col => !originalColumns.includes(col))];
 
       const exportData = data.map(row => {
-        let newRow = { ...row };
+        const newRow = {};
         exportHeaders.forEach(header => {
-          if (newRow[header] === undefined) newRow[header] = null;
+          newRow[header] = row[header] !== undefined ? row[header] : null;
         });
         return newRow;
       });
 
-      var ws = XLSX.utils.json_to_sheet(exportData, { header: exportHeaders, cellDates: true });
-      var wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "065 Gas Analysis Data");
-      XLSX.writeFile(wb, "065_gas_analysis_data.xlsx");
+      const worksheet = XLSX.utils.json_to_sheet(exportData, { header: exportHeaders, cellDates: true });
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "GC Calculator V2 Data");
+      XLSX.writeFile(workbook, "gc_calculator_version_2_data.xlsx");
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-      if (localStorage.getItem("uploadedData") && localStorage.getItem("tableColumns")) {
-        const storedData = JSON.parse(localStorage.getItem("uploadedData"));
-        const storedColumns = JSON.parse(localStorage.getItem("tableColumns"));
-        loadTableData();
-        setupBoxPlot(storedData, storedColumns);
-        setupSecondBoxPlot(storedData, storedColumns);
-        setupThirdBoxPlot(storedData, storedColumns);
-        setupCombinedCategoryBoxPlot(storedData, storedColumns);
-      }
+      localStorage.removeItem('uploadedData');
+      localStorage.removeItem('tableColumns');
     });
   </script>
 
-  <!-- Simple-DataTables JS -->
+  <!-- Simple DataTables JS -->
   <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
 
   <!-- Bootstrap Bundle JS -->
