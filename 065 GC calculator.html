@@ -5,155 +5,74 @@
   <title>GC Calculator Version 2</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Bootstrap CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-
-  <!-- SheetJS Library for Excel Parsing and Export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-  <!-- Simple DataTables -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/style.css">
 
   <style>
     body { margin-top: 20px; }
-    .calculator-note { font-size: 0.95rem; }
     .small-muted { font-size: 0.9rem; color: #6c757d; }
-    canvas { max-width: 900px; max-height: 500px; margin: 0 auto; }
+    .calculator-note { font-size: 0.95rem; }
   </style>
 </head>
 
 <body class="container">
   <h2 class="text-center">GC Calculator Version 2</h2>
   <p class="text-center text-muted mb-3">
-    Methane calculation using sludge density, corrected sludge volume, corrected headspace volume, Henry constant for dissolved methane, and standard molar volume at NTP for headspace methane.
+    Calculates methane from GC concentration, vial weights, sludge density, brine volume, vial volume and poison volume.
   </p>
 
-  <!-- Navigation -->
-  <div class="text-center mb-3">
-    <div class="dropdown d-inline-block me-2">
-      <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        GC Calculators
-      </button>
-      <ul class="dropdown-menu">
-        <li><a class="dropdown-item" href="GC_calculator.html">GC Calculator Version 1</a></li>
-        <li><a class="dropdown-item active" href="GC_calculator_version_2.html">GC Calculator Version 2</a></li>
-      </ul>
-    </div>
-
-    <a href="Chemical_dosing_calculator2.html" class="btn btn-outline-success me-2">Chemical Dosing Calculator</a>
-    <a href="hydroponics_analysis.html" class="btn btn-outline-info">Hydroponics + Horiba Analysis</a>
-  </div>
-
-  <!-- File Upload Section -->
-  <section id="fileUploadSection" class="mt-4 card shadow-sm">
+  <section class="card shadow-sm mt-4">
     <div class="card-body text-center">
-      <h5 class="card-title">Upload GC Version 2 Data</h5>
+      <h5 class="card-title">Upload GC Input File</h5>
       <p class="small-muted">
-        Upload a .xlsx file containing the input columns. The calculator will generate the methane calculation columns.
+        Use a clean Excel sheet with the raw input columns only. The calculator will generate the calculation columns.
       </p>
       <input type="file" id="fileInput" accept=".xlsx" class="form-control mx-auto" style="max-width: 450px;">
-      <div class="mt-2 text-center" id="fileUploadStatus"></div>
+      <div class="mt-2" id="fileUploadStatus"></div>
     </div>
   </section>
 
-  <!-- Calculation Summary -->
   <section class="alert alert-secondary mt-4 calculator-note">
-    <strong>GC Version 2 calculation method:</strong><br>
-    Liquid added to vial = <strong>(Wf - Wi) / Density</strong><br>
-    Sludge volume = <strong>((Wf - Wi) / Density) - Brine_vol - V_poison</strong><br>
-    Headspace volume = <strong>V_vial - ((Wf - Wi) / Density)</strong><br>
-    Methane fraction = <strong>Cg = Concent_CH4 (%) / 100</strong><br>
-    Methane partial pressure = <strong>Pg = Cg × Total_P</strong><br>
-    Dissolved methane = <strong>C_A = (Molar_water × Pg × Molecular_mass_CH4 × 1000) / Kh</strong><br>
-    Headspace methane = <strong>C_AH = (Cg × Molecular_mass_CH4 × 1000 / Standard volume at NTP) × (V_headspace / V_sludge) × (T_reference / T_sample_K)</strong><br>
-    Total methane = <strong>TC = C_A + C_AH</strong>
+    <strong>Required input columns:</strong><br>
+    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_poison (mL)<br><br>
+    <strong>Optional input column:</strong> T_sample (°C). If missing, the calculator assumes 21°C.<br><br>
+    <strong>Calculated by the tool:</strong><br>
+    V_headspace (mL), V_sludge (mL), Cg, Total_P, Pg, Molar_water, T_reference, T_sample (K), Kh, Molecular_mass_CH4, Standard volume at NTP, C_A, C_AH, TC.
   </section>
 
-  <!-- Column Definitions -->
-  <section id="columnDefinitionsSection" class="accordion mt-4">
-    <div class="accordion-item">
-      <h2 class="accordion-header" id="columnDefinitionsHeading">
-        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#columnDefinitionsBody" aria-expanded="false" aria-controls="columnDefinitionsBody">
-          Required / Expected Column Definitions
-        </button>
-      </h2>
-      <div id="columnDefinitionsBody" class="accordion-collapse collapse" aria-labelledby="columnDefinitionsHeading">
-        <div class="accordion-body">
-          <p><strong>Expected input columns:</strong></p>
-          <ul>
-            <li><strong>Sampling date</strong> - Sampling date.</li>
-            <li><strong>Date_GC</strong> - GC analysis date.</li>
-            <li><strong>Sample_name</strong> - Sample identifier.</li>
-            <li><strong>Sampling Technique</strong> - Sampling method.</li>
-            <li><strong>Lab_GC</strong> - Lab/location where GC was run.</li>
-            <li><strong>Concent_CH4 (%)</strong> - Methane concentration from GC.</li>
-            <li><strong>Wi (g)</strong> - Empty vial and cap weight.</li>
-            <li><strong>Wf (g)</strong> - Vial, cap, and liquid weight.</li>
-            <li><strong>Density (g/ml)</strong> - Sludge/sample density. If blank, calculator assumes 1 g/mL.</li>
-            <li><strong>Brine_vol (mL)</strong> - Brine volume added.</li>
-            <li><strong>V_vial (mL)</strong> - Total vial volume.</li>
-            <li><strong>V_poison (mL)</strong> - Poison/reagent volume added.</li>
-          </ul>
-          <p><strong>Calculated columns:</strong></p>
-          <ul>
-            <li>V_headspace (mL)</li>
-            <li>V_sludge (mL)</li>
-            <li>Cg  (vol CH4/vol sample)</li>
-            <li>Total_P (atm)</li>
-            <li>Pg (atm CH4)</li>
-            <li>Molar_water (mol/L)</li>
-            <li>T_reference (K)</li>
-            <li>T_sample (°C)</li>
-            <li>T_sample (K)</li>
-            <li>Kh (atm/molfraction)</li>
-            <li>Molecular_mass_CH4 (g/mol)</li>
-            <li>Standard volume at NTP (L/mol)</li>
-            <li>C_A (mg/L)</li>
-            <li>C_AH (mg/L)</li>
-            <li>TC (mg/L)</li>
-          </ul>
-        </div>
-      </div>
-    </div>
+  <section class="alert alert-info calculator-note">
+    <strong>Calculation summary:</strong><br>
+    Total liquid volume = (Wf - Wi) / Density<br>
+    V_sludge = Total liquid volume - Brine_vol - V_poison<br>
+    V_headspace = V_vial - Total liquid volume<br>
+    Cg = Concent_CH4 (%) / 100<br>
+    Pg = Cg × Total_P<br>
+    C_A = (Molar_water × Pg × Molecular_mass_CH4 × 1000) / Kh<br>
+    C_AH = (Cg × Molecular_mass_CH4 × 1000 / Standard volume at NTP) × (V_headspace / V_sludge) × (T_reference / T_sample_K)<br>
+    TC = C_A + C_AH
   </section>
 
-  <!-- Validation Scatter Plot -->
-  <section id="validationPlotSection" class="text-center my-4">
-    <h3>Validation Scatter Plot</h3>
-    <p class="small-muted">
-      If your Excel file already contains an existing CH4/TC value, this plot compares Excel values against calculator values.
-    </p>
-    <canvas id="validationScatterPlot" width="900" height="500"></canvas>
-  </section>
-
-  <!-- Data Table Section -->
-  <section id="dataTableSection" class="mt-4">
+  <section class="mt-4">
     <h3>Calculated Data</h3>
     <div class="table-responsive">
-      <table id="dataTableTable" class="table table-bordered mt-2">
-        <thead class="table-dark">
-          <tr id="tableHeaders"></tr>
-        </thead>
+      <table id="dataTableTable" class="table table-bordered table-sm mt-2">
+        <thead class="table-dark"><tr id="tableHeaders"></tr></thead>
         <tbody id="dataTable"></tbody>
       </table>
     </div>
   </section>
 
-  <!-- Download Section -->
-  <section id="downloadSection" class="mt-3 mb-5 d-flex justify-content-between align-items-center">
-    <button id="downloadExcel" class="btn btn-primary">Download Calculated Table as Excel</button>
+  <section class="mt-3 mb-5">
+    <button id="downloadExcel" class="btn btn-primary">Download Calculated Excel</button>
   </section>
 
-  <!-- Sheet Selection Modal -->
-  <div class="modal fade" id="sheetSelectionModal" tabindex="-1" aria-labelledby="sheetSelectionModalLabel" aria-hidden="true">
+  <div class="modal fade" id="sheetSelectionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title" id="sheetSelectionModalLabel">Select Excel Sheet</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          <h5 class="modal-title">Select Excel Sheet</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <select class="form-select" id="sheetList"></select>
@@ -167,191 +86,26 @@
   </div>
 
   <script>
-    // =========================
-    // Utility functions
-    // =========================
-
-    function parseNumber(value) {
-      if (value === null || value === undefined || value === "") return NaN;
-      if (typeof value === "number") return value;
-
-      // Handles comma decimals such as 2,93 and removes accidental spaces.
-      const cleanedValue = String(value).trim().replace(",", ".");
-      return parseFloat(cleanedValue);
-    }
-
-    function getValue(row, possibleColumnNames) {
-      const rowKeys = Object.keys(row);
-
-      for (const wantedColumnName of possibleColumnNames) {
-        const matchedKey = rowKeys.find(existingKey =>
-          existingKey.trim().toLowerCase() === wantedColumnName.trim().toLowerCase()
-        );
-
-        if (matchedKey !== undefined) return row[matchedKey];
-      }
-
-      return undefined;
-    }
-
-    function getNumber(row, possibleColumnNames, defaultValue = NaN) {
-      const value = getValue(row, possibleColumnNames);
-      const parsedValue = parseNumber(value);
-      return isNaN(parsedValue) ? defaultValue : parsedValue;
-    }
-
-    function formatExcelDate(serial) {
-      if (isNaN(serial)) return serial || "";
-      const utcDays = Math.floor(serial - 25569);
-      const utcValue = utcDays * 86400;
-      const dateInfo = new Date(utcValue * 1000);
-      const day = dateInfo.getDate().toString().padStart(2, '0');
-      const month = (dateInfo.getMonth() + 1).toString().padStart(2, '0');
-      const year = dateInfo.getFullYear();
-      return `${day}/${month}/${year}`;
-    }
-
-    function roundNumber(value, decimals = 3) {
-      if (isNaN(value)) return "N/A";
-      return Number(value.toFixed(decimals));
-    }
-
-    function getChartValue(row) {
-      const calculatorValue = parseNumber(row["TC (mg/L)"]);
-      return isNaN(calculatorValue) ? NaN : calculatorValue;
-    }
-
-    function getExistingExcelMethaneValue(row) {
-      // This allows validation against different possible names in the Excel.
-      // If the Excel already contains TC (mg/L), the original value is copied into Excel_TC_before_calculation before recalculation.
-      return getNumber(row, [
-        "Excel_TC_before_calculation",
-        "Excel CH4 (mg/L)",
-        "CH4 (mg/L)",
-        "TC Excel (mg/L)",
-        "TC from Excel (mg/L)",
-        "Original TC (mg/L)"
-      ]);
-    }
-
-    // =========================
-    // GC Calculator Version 2
-    // =========================
-
-    function calculateMethane(row) {
-      const results = {
-        "Density (g/ml)": "N/A",
-        "V_headspace (mL)": "N/A",
-        "V_sludge (mL)": "N/A",
-        "Cg  (vol CH4/vol sample)": "N/A",
-        "Total_P (atm)": "N/A",
-        "Pg (atm CH4)": "N/A",
-        "Molar_water (mol/L)": "N/A",
-        "T_reference (K)": "N/A",
-        "T_sample (°C)": "N/A",
-        "T_sample (K)": "N/A",
-        "Kh (atm/molfraction)": "N/A",
-        "Molecular_mass_CH4 (g/mol)": "N/A",
-        "Standard volume at NTP (L/mol)": "N/A",
-        "C_A (mg/L)": "N/A",
-        "C_AH (mg/L)": "N/A",
-        "TC (mg/L)": "N/A"
-      };
-
-      try {
-        // Input values from Excel.
-        const methaneConcentrationPercent = getNumber(row, ["Concent_CH4 (%)", "Concent_CH4", "CH4%", "Methane (%)"]);
-        const emptyVialWeightG = getNumber(row, ["Wi (g)", "Wi", "empty vial weight", "empty vial weight (g)"]);
-        const fullVialWeightG = getNumber(row, ["Wf (g)", "Wf", "full vial weight", "full vial weight (g)"]);
-        const sludgeDensityGPerMl = getNumber(row, ["Density (g/ml)", "Density (g/mL)", "Density", "sludge density"], 1);
-        const brineVolumeMl = getNumber(row, ["Brine_vol (mL)", "Brine_vol", "Brine volume (mL)", "brine"], 0);
-        const vialVolumeMl = getNumber(row, ["V_vial (mL)", "V_vial", "Vial volume (mL)"]);
-        const poisonVolumeMl = getNumber(row, ["V_poison (mL)", "V_poison", "Poison volume (mL)", "poison volume"], 0);
-
-        // Constants/defaults. If provided in Excel, they are used; otherwise defaults are used.
-        const totalPressureAtm = getNumber(row, ["Total_P (atm)", "Total_P", "Pressure (atm)", "P"], 1);
-        const molarWaterMolPerL = getNumber(row, ["Molar_water (mol/L)", "Molar_water", "Molar water"], 55.5);
-        const referenceTemperatureK = getNumber(row, ["T_reference (K)", "T_reference", "T ref (K)"], 273.15);
-        const sampleTemperatureC = getNumber(row, ["T_sample (°C)", "T_sample", "T (°C)", "Temperature (°C)"], 21);
-        const sampleTemperatureKInput = getNumber(row, ["T_sample (K)", "T_K", "T sample K"]);
-        const henryConstantAtmPerMoleFraction = getNumber(row, ["Kh (atm/molfraction)", "Kh", "Henry constant", "Henry's constant"], 36407.576);
-        const methaneMolecularMassGPerMol = getNumber(row, ["Molecular_mass_CH4 (g/mol)", "Molecular_mass_CH4", "Molecular mass CH4", "MW", "MW (g/mol)"], 16.04);
-        const standardMolarVolumeNtpLPerMol = getNumber(row, ["Standard volume at NTP (L/mol)", "Standard volume at NTP", "Standard_volume_NTP", "Vm"], 22.4);
-
-        // Minimum required values.
-        if (
-          isNaN(methaneConcentrationPercent) ||
-          isNaN(emptyVialWeightG) ||
-          isNaN(fullVialWeightG) ||
-          isNaN(sludgeDensityGPerMl) ||
-          sludgeDensityGPerMl <= 0 ||
-          isNaN(vialVolumeMl) ||
-          vialVolumeMl <= 0
-        ) {
-          return results;
-        }
-
-        // Volume calculations.
-        const totalLiquidVolumeMl = (fullVialWeightG - emptyVialWeightG) / sludgeDensityGPerMl;
-        const sludgeVolumeMl = totalLiquidVolumeMl - brineVolumeMl - poisonVolumeMl;
-        const headspaceVolumeMl = vialVolumeMl - totalLiquidVolumeMl;
-
-        if (sludgeVolumeMl <= 0 || headspaceVolumeMl <= 0) {
-          return results;
-        }
-
-        // Methane calculations.
-        const methaneGasFraction = methaneConcentrationPercent / 100;
-        const methanePartialPressureAtm = methaneGasFraction * totalPressureAtm;
-        const sampleTemperatureK = isNaN(sampleTemperatureKInput) ? sampleTemperatureC + 273.15 : sampleTemperatureKInput;
-
-        const dissolvedMethaneMgPerL =
-          (molarWaterMolPerL * methanePartialPressureAtm * methaneMolecularMassGPerMol * 1000) /
-          henryConstantAtmPerMoleFraction;
-
-        const headspaceMethaneMgPerL =
-          (methaneGasFraction * methaneMolecularMassGPerMol * 1000 / standardMolarVolumeNtpLPerMol) *
-          (headspaceVolumeMl / sludgeVolumeMl) *
-          (referenceTemperatureK / sampleTemperatureK);
-
-        const totalMethaneMgPerL = dissolvedMethaneMgPerL + headspaceMethaneMgPerL;
-
-        results["Density (g/ml)"] = roundNumber(sludgeDensityGPerMl, 3);
-        results["V_headspace (mL)"] = roundNumber(headspaceVolumeMl, 3);
-        results["V_sludge (mL)"] = roundNumber(sludgeVolumeMl, 3);
-        results["Cg  (vol CH4/vol sample)"] = roundNumber(methaneGasFraction, 6);
-        results["Total_P (atm)"] = roundNumber(totalPressureAtm, 3);
-        results["Pg (atm CH4)"] = roundNumber(methanePartialPressureAtm, 6);
-        results["Molar_water (mol/L)"] = roundNumber(molarWaterMolPerL, 3);
-        results["T_reference (K)"] = roundNumber(referenceTemperatureK, 3);
-        results["T_sample (°C)"] = roundNumber(sampleTemperatureC, 2);
-        results["T_sample (K)"] = roundNumber(sampleTemperatureK, 3);
-        results["Kh (atm/molfraction)"] = roundNumber(henryConstantAtmPerMoleFraction, 3);
-        results["Molecular_mass_CH4 (g/mol)"] = roundNumber(methaneMolecularMassGPerMol, 3);
-        results["Standard volume at NTP (L/mol)"] = roundNumber(standardMolarVolumeNtpLPerMol, 3);
-        results["C_A (mg/L)"] = roundNumber(dissolvedMethaneMgPerL, 3);
-        results["C_AH (mg/L)"] = roundNumber(headspaceMethaneMgPerL, 3);
-        results["TC (mg/L)"] = roundNumber(totalMethaneMgPerL, 3);
-
-        return results;
-      } catch (error) {
-        console.error("Error in calculateMethane:", error);
-        return results;
-      }
-    }
-
-    // =========================
-    // Excel handling
-    // =========================
-
     let currentWorkbook;
-    let validationChartInstance = null;
+    let processedData = [];
 
-    const fileInput = document.getElementById('fileInput');
-    const fileUploadStatus = document.getElementById('fileUploadStatus');
-
-    const calculatedColumns = [
+    const inputColumns = [
+      "Sampling date",
+      "Date_GC",
+      "Sample_name",
+      "Sampling Technique",
+      "Lab_GC",
+      "Concent_CH4 (%)",
+      "Wi (g)",
+      "Wf (g)",
       "Density (g/ml)",
+      "Brine_vol (mL)",
+      "V_vial (mL)",
+      "V_poison (mL)"
+    ];
+
+    const outputColumns = [
+      ...inputColumns,
       "V_headspace (mL)",
       "V_sludge (mL)",
       "Cg  (vol CH4/vol sample)",
@@ -366,184 +120,199 @@
       "Standard volume at NTP (L/mol)",
       "C_A (mg/L)",
       "C_AH (mg/L)",
-      "TC (mg/L)"
+      "TC (mg/L)",
+      "Calculation check"
     ];
 
-    function getVisibleDataFromSheet(worksheet) {
-      const hiddenRowIndices = new Set();
+    function parseNumber(value) {
+      if (value === null || value === undefined || value === "") return NaN;
+      if (typeof value === "number") return value;
+      return parseFloat(String(value).trim().replace(",", "."));
+    }
 
-      if (worksheet['!rows']) {
-        worksheet['!rows'].forEach((row, index) => {
-          if (row && row.hidden) hiddenRowIndices.add(index);
-        });
+    function getValue(row, possibleNames) {
+      const keys = Object.keys(row);
+      for (const name of possibleNames) {
+        const matchedKey = keys.find(key => key.trim().toLowerCase() === name.trim().toLowerCase());
+        if (matchedKey !== undefined) return row[matchedKey];
+      }
+      return undefined;
+    }
+
+    function getNumber(row, possibleNames, defaultValue = NaN) {
+      const value = getValue(row, possibleNames);
+      const parsed = parseNumber(value);
+      return isNaN(parsed) ? defaultValue : parsed;
+    }
+
+    function round(value, decimals = 3) {
+      if (isNaN(value)) return "N/A";
+      return Number(value.toFixed(decimals));
+    }
+
+    function calculateRow(row) {
+      const methanePercent = getNumber(row, ["Concent_CH4 (%)", "Concent_CH4", "CH4%"]);
+      const wiG = getNumber(row, ["Wi (g)", "Wi"]);
+      const wfG = getNumber(row, ["Wf (g)", "Wf"]);
+      const densityGml = getNumber(row, ["Density (g/ml)", "Density (g/mL)", "Density"], 1);
+      const brineMl = getNumber(row, ["Brine_vol (mL)", "Brine_vol", "Brine volume (mL)"], 0);
+      const vialMl = getNumber(row, ["V_vial (mL)", "V_vial", "Vial volume (mL)"]);
+      const poisonMl = getNumber(row, ["V_poison (mL)", "V_poison", "Poison volume (mL)"], 0);
+
+      const totalPressureAtm = 1;
+      const molarWater = 55.5;
+      const referenceTempK = 273.15;
+      const sampleTempC = getNumber(row, ["T_sample (°C)", "T_sample", "T (°C)"], 21);
+      const sampleTempK = sampleTempC + 273.15;
+      const kh = 36407.57609;
+      const methaneMass = 16.04;
+      const standardVolumeNtp = 22.4;
+
+      const cleanRow = {};
+      inputColumns.forEach(col => {
+        if (col === "Density (g/ml)") cleanRow[col] = isNaN(densityGml) ? 1 : densityGml;
+        else cleanRow[col] = getValue(row, [col]) ?? "";
+      });
+
+      if (isNaN(methanePercent) || isNaN(wiG) || isNaN(wfG) || isNaN(densityGml) || densityGml <= 0 || isNaN(vialMl)) {
+        return {
+          ...cleanRow,
+          "V_headspace (mL)": "N/A",
+          "V_sludge (mL)": "N/A",
+          "Cg  (vol CH4/vol sample)": "N/A",
+          "Total_P (atm)": totalPressureAtm,
+          "Pg (atm CH4)": "N/A",
+          "Molar_water (mol/L)": molarWater,
+          "T_reference (K)": referenceTempK,
+          "T_sample (°C)": sampleTempC,
+          "T_sample (K)": sampleTempK,
+          "Kh (atm/molfraction)": kh,
+          "Molecular_mass_CH4 (g/mol)": methaneMass,
+          "Standard volume at NTP (L/mol)": standardVolumeNtp,
+          "C_A (mg/L)": "N/A",
+          "C_AH (mg/L)": "N/A",
+          "TC (mg/L)": "N/A",
+          "Calculation check": "Missing required input"
+        };
       }
 
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
-      return jsonData.filter((row, index) => !hiddenRowIndices.has(index + 1));
+      const totalLiquidMl = (wfG - wiG) / densityGml;
+      const sludgeMl = totalLiquidMl - brineMl - poisonMl;
+      const headspaceMl = vialMl - totalLiquidMl;
+
+      if (sludgeMl <= 0 || headspaceMl <= 0) {
+        return {
+          ...cleanRow,
+          "V_headspace (mL)": round(headspaceMl),
+          "V_sludge (mL)": round(sludgeMl),
+          "Cg  (vol CH4/vol sample)": "N/A",
+          "Total_P (atm)": totalPressureAtm,
+          "Pg (atm CH4)": "N/A",
+          "Molar_water (mol/L)": molarWater,
+          "T_reference (K)": referenceTempK,
+          "T_sample (°C)": sampleTempC,
+          "T_sample (K)": sampleTempK,
+          "Kh (atm/molfraction)": kh,
+          "Molecular_mass_CH4 (g/mol)": methaneMass,
+          "Standard volume at NTP (L/mol)": standardVolumeNtp,
+          "C_A (mg/L)": "N/A",
+          "C_AH (mg/L)": "N/A",
+          "TC (mg/L)": "N/A",
+          "Calculation check": "Check volumes"
+        };
+      }
+
+      const cg = methanePercent / 100;
+      const pg = cg * totalPressureAtm;
+      const cA = (molarWater * pg * methaneMass * 1000) / kh;
+      const cAH = (cg * methaneMass * 1000 / standardVolumeNtp) * (headspaceMl / sludgeMl) * (referenceTempK / sampleTempK);
+      const tc = cA + cAH;
+
+      return {
+        ...cleanRow,
+        "V_headspace (mL)": round(headspaceMl, 6),
+        "V_sludge (mL)": round(sludgeMl, 6),
+        "Cg  (vol CH4/vol sample)": round(cg, 6),
+        "Total_P (atm)": totalPressureAtm,
+        "Pg (atm CH4)": round(pg, 6),
+        "Molar_water (mol/L)": molarWater,
+        "T_reference (K)": referenceTempK,
+        "T_sample (°C)": sampleTempC,
+        "T_sample (K)": round(sampleTempK, 3),
+        "Kh (atm/molfraction)": kh,
+        "Molecular_mass_CH4 (g/mol)": methaneMass,
+        "Standard volume at NTP (L/mol)": standardVolumeNtp,
+        "C_A (mg/L)": round(cA, 6),
+        "C_AH (mg/L)": round(cAH, 6),
+        "TC (mg/L)": round(tc, 6),
+        "Calculation check": "OK"
+      };
+    }
+
+    function findHeaderAndReadSheet(worksheet) {
+      const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
+
+      const headerIndex = rows.findIndex(row => {
+        const cleaned = row.map(cell => String(cell).trim().toLowerCase());
+        return cleaned.includes("sampling date") && cleaned.includes("date_gc") && cleaned.includes("sample_name");
+      });
+
+      if (headerIndex === -1) {
+        alert("Could not find the header row. The sheet must contain Sampling date, Date_GC, and Sample_name.");
+        return [];
+      }
+
+      const headers = rows[headerIndex].map(h => String(h).trim());
+      const dataRows = rows.slice(headerIndex + 1);
+
+      return dataRows.map(row => {
+        const obj = {};
+        headers.forEach((header, i) => {
+          if (header !== "") obj[header] = row[i] ?? "";
+        });
+        return obj;
+      }).filter(row => {
+        return String(row["Sample_name"] || "").trim() !== "" &&
+               String(row["Concent_CH4 (%)"] || "").trim() !== "";
+      });
     }
 
     function processSheetData(jsonData) {
       if (!jsonData || jsonData.length === 0) {
-        alert("No data found in the selected sheet.");
+        alert("No valid data found.");
         return;
       }
 
-      let originalColumns = Object.keys(jsonData[0]);
-
-      const processedData = jsonData.map(row => {
-        const rowCopy = { ...row };
-
-        // Preserve Excel TC before overwriting it, so the scatter plot can validate calculator vs Excel.
-        if (rowCopy["TC (mg/L)"] !== undefined && rowCopy["TC (mg/L)"] !== "") {
-          rowCopy["Excel_TC_before_calculation"] = rowCopy["TC (mg/L)"];
-        }
-
-        return {
-          ...rowCopy,
-          ...calculateMethane(rowCopy)
-        };
-      });
-
-      if (!originalColumns.includes("Excel_TC_before_calculation") && processedData.some(row => row["Excel_TC_before_calculation"] !== undefined)) {
-        originalColumns = [...originalColumns, "Excel_TC_before_calculation"];
-      }
-
-      localStorage.setItem("uploadedData", JSON.stringify(processedData));
-      localStorage.setItem("tableColumns", JSON.stringify(originalColumns));
-
-      fileUploadStatus.textContent = "Data processed successfully.";
-      loadTableData();
-      setupValidationScatterPlot(processedData);
-      fileInput.value = '';
+      processedData = jsonData.map(row => calculateRow(row));
+      document.getElementById("fileUploadStatus").textContent = `Processed ${processedData.length} rows successfully.`;
+      renderTable(processedData);
     }
 
-    function handleExcelUpload(file) {
-      fileUploadStatus.textContent = "Reading file...";
-      const reader = new FileReader();
-
-      reader.onload = function(e) {
-        const data = new Uint8Array(e.target.result);
-
-        try {
-          currentWorkbook = XLSX.read(data, { type: 'array', cellStyles: true });
-
-          if (currentWorkbook.SheetNames.length > 1) {
-            const sheetList = document.getElementById('sheetList');
-            sheetList.innerHTML = '';
-
-            currentWorkbook.SheetNames.forEach(sheetName => {
-              const option = document.createElement('option');
-              option.value = sheetName;
-              option.textContent = sheetName;
-              sheetList.appendChild(option);
-            });
-
-            const sheetSelectionModal = new bootstrap.Modal(document.getElementById('sheetSelectionModal'));
-            sheetSelectionModal.show();
-          } else if (currentWorkbook.SheetNames.length === 1) {
-            const firstSheetName = currentWorkbook.SheetNames[0];
-            const worksheet = currentWorkbook.Sheets[firstSheetName];
-            const jsonData = getVisibleDataFromSheet(worksheet);
-            processSheetData(jsonData);
-          } else {
-            fileUploadStatus.textContent = "Error: No sheets found in Excel file.";
-            alert("No sheets found in the uploaded Excel file.");
-          }
-        } catch (error) {
-          console.error("Error reading Excel file:", error);
-          fileUploadStatus.textContent = "Error reading Excel file. Please ensure it is a valid .xlsx file.";
-          alert("Error processing Excel file. Please check the file format and try again.");
-        }
-      };
-
-      reader.onerror = function(error) {
-        console.error("FileReader error:", error);
-        fileUploadStatus.textContent = "Error reading the file.";
-        alert("Failed to read the file. Please try again.");
-      };
-
-      reader.readAsArrayBuffer(file);
-    }
-
-    fileInput.addEventListener('change', function(e) {
-      fileUploadStatus.textContent = "";
-      const file = e.target.files[0];
-      if (!file) return;
-
-      if (file.name.endsWith('.xlsx')) {
-        handleExcelUpload(file);
-      } else {
-        fileUploadStatus.textContent = "Invalid file format. Please upload a .xlsx file.";
-        alert("Please upload a valid .xlsx Excel file.");
-        this.value = '';
-      }
-    });
-
-    document.getElementById('selectSheetButton').addEventListener('click', function() {
-      const selectedSheetName = document.getElementById('sheetList').value;
-      const worksheet = currentWorkbook.Sheets[selectedSheetName];
-      const jsonData = getVisibleDataFromSheet(worksheet);
-      processSheetData(jsonData);
-
-      const sheetSelectionModal = bootstrap.Modal.getInstance(document.getElementById('sheetSelectionModal'));
-      sheetSelectionModal.hide();
-    });
-
-    // =========================
-    // Table display
-    // =========================
-
-    function loadTableData() {
-      const storedData = localStorage.getItem("uploadedData");
-      const storedColumns = localStorage.getItem("tableColumns");
-      if (!storedData || !storedColumns) return;
-
-      const data = JSON.parse(storedData);
-      const originalColumns = JSON.parse(storedColumns);
-      const displayColumns = [...originalColumns, ...calculatedColumns.filter(col => !originalColumns.includes(col))];
-
+    function renderTable(data) {
       if (window.dataTableObj) {
         window.dataTableObj.destroy();
         window.dataTableObj = null;
       }
 
-      const tableHeaders = document.getElementById("tableHeaders");
-      tableHeaders.innerHTML = "";
+      const thead = document.getElementById("tableHeaders");
+      const tbody = document.getElementById("dataTable");
+      thead.innerHTML = "";
+      tbody.innerHTML = "";
 
-      displayColumns.forEach(columnName => {
+      outputColumns.forEach(col => {
         const th = document.createElement("th");
-        th.textContent = columnName;
-        tableHeaders.appendChild(th);
+        th.textContent = col;
+        thead.appendChild(th);
       });
-
-      const tableBody = document.getElementById("dataTable");
-      tableBody.innerHTML = "";
 
       data.forEach(row => {
         const tr = document.createElement("tr");
-
-        displayColumns.forEach(columnName => {
+        outputColumns.forEach(col => {
           const td = document.createElement("td");
-          let cellValue = row[columnName];
-
-          if ((columnName === "Sampling date" || columnName === "Date_GC") && cellValue) {
-            if (!isNaN(cellValue)) {
-              cellValue = formatExcelDate(cellValue);
-            }
-          }
-
-          if (calculatedColumns.includes(columnName) && !isNaN(parseNumber(cellValue))) {
-            const numericValue = parseNumber(cellValue);
-            cellValue = Math.abs(numericValue) < 0.001 && numericValue !== 0
-              ? numericValue.toExponential(3)
-              : numericValue.toFixed(3);
-          }
-
-          td.textContent = cellValue !== undefined && cellValue !== null ? cellValue : "N/A";
+          td.textContent = row[col] ?? "";
           tr.appendChild(td);
         });
-
-        tableBody.appendChild(tr);
+        tbody.appendChild(tr);
       });
 
       window.dataTableObj = new simpleDatatables.DataTable("#dataTableTable", {
@@ -552,126 +321,61 @@
       });
     }
 
-    // =========================
-    // Validation scatter plot
-    // =========================
+    function handleExcelUpload(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const data = new Uint8Array(e.target.result);
+        currentWorkbook = XLSX.read(data, { type: "array" });
 
-    function setupValidationScatterPlot(data) {
-      const validationPoints = data
-        .map(row => {
-          const excelValue = getExistingExcelMethaneValue(row);
-          const calculatorValue = getChartValue(row);
-          return { x: excelValue, y: calculatorValue };
-        })
-        .filter(point => !isNaN(point.x) && !isNaN(point.y));
-
-      const ctx = document.getElementById("validationScatterPlot").getContext("2d");
-
-      if (validationChartInstance) {
-        validationChartInstance.destroy();
-        validationChartInstance = null;
-      }
-
-      if (validationPoints.length === 0) {
-        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-        ctx.font = "16px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("No existing Excel CH4/TC values found for validation plot.", ctx.canvas.width / 2, ctx.canvas.height / 2);
-        return;
-      }
-
-      const allValues = validationPoints.flatMap(point => [point.x, point.y]);
-      const maxValue = Math.max(...allValues) * 1.05;
-
-      validationChartInstance = new Chart(ctx, {
-        type: 'scatter',
-        data: {
-          datasets: [
-            {
-              label: 'Calculator vs Excel',
-              data: validationPoints,
-              pointRadius: 5
-            },
-            {
-              label: '1:1 line',
-              data: [{ x: 0, y: 0 }, { x: maxValue, y: maxValue }],
-              type: 'line',
-              pointRadius: 0,
-              borderWidth: 2
-            }
-          ]
-        },
-        options: {
-          responsive: false,
-          maintainAspectRatio: false,
-          plugins: {
-            title: {
-              display: true,
-              text: 'Validation: CH4 (mg/L) from Excel vs CH4 (mg/L) from GC Calculator Version 2'
-            },
-            legend: {
-              position: 'top'
-            }
-          },
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'CH4 / TC from Excel (mg/L)'
-              },
-              beginAtZero: true
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'CH4 / TC from GC Calculator Version 2 (mg/L)'
-              },
-              beginAtZero: true
-            }
-          }
+        if (currentWorkbook.SheetNames.length > 1) {
+          const sheetList = document.getElementById("sheetList");
+          sheetList.innerHTML = "";
+          currentWorkbook.SheetNames.forEach(sheetName => {
+            const option = document.createElement("option");
+            option.value = sheetName;
+            option.textContent = sheetName;
+            sheetList.appendChild(option);
+          });
+          new bootstrap.Modal(document.getElementById("sheetSelectionModal")).show();
+        } else {
+          const worksheet = currentWorkbook.Sheets[currentWorkbook.SheetNames[0]];
+          processSheetData(findHeaderAndReadSheet(worksheet));
         }
-      });
+      };
+      reader.readAsArrayBuffer(file);
     }
 
-    // =========================
-    // Export
-    // =========================
-
-    document.getElementById("downloadExcel").addEventListener("click", function() {
-      const data = JSON.parse(localStorage.getItem("uploadedData")) || [];
-
-      if (data.length === 0) {
-        alert("No data available to download.");
+    document.getElementById("fileInput").addEventListener("change", function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (!file.name.endsWith(".xlsx")) {
+        alert("Please upload a .xlsx file.");
         return;
       }
-
-      const originalColumns = JSON.parse(localStorage.getItem("tableColumns")) || Object.keys(data[0] || {});
-      const exportHeaders = [...originalColumns, ...calculatedColumns.filter(col => !originalColumns.includes(col))];
-
-      const exportData = data.map(row => {
-        const newRow = {};
-        exportHeaders.forEach(header => {
-          newRow[header] = row[header] !== undefined ? row[header] : null;
-        });
-        return newRow;
-      });
-
-      const worksheet = XLSX.utils.json_to_sheet(exportData, { header: exportHeaders, cellDates: true });
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "GC Calculator V2 Data");
-      XLSX.writeFile(workbook, "gc_calculator_version_2_data.xlsx");
+      document.getElementById("fileUploadStatus").textContent = "Reading file...";
+      handleExcelUpload(file);
     });
 
-    document.addEventListener('DOMContentLoaded', function() {
-      localStorage.removeItem('uploadedData');
-      localStorage.removeItem('tableColumns');
+    document.getElementById("selectSheetButton").addEventListener("click", function() {
+      const selectedSheet = document.getElementById("sheetList").value;
+      const worksheet = currentWorkbook.Sheets[selectedSheet];
+      processSheetData(findHeaderAndReadSheet(worksheet));
+      bootstrap.Modal.getInstance(document.getElementById("sheetSelectionModal")).hide();
+    });
+
+    document.getElementById("downloadExcel").addEventListener("click", function() {
+      if (!processedData || processedData.length === 0) {
+        alert("No data to download.");
+        return;
+      }
+      const ws = XLSX.utils.json_to_sheet(processedData, { header: outputColumns });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "GC Calculator V2");
+      XLSX.writeFile(wb, "GC_calculator_version_2_output.xlsx");
     });
   </script>
 
-  <!-- Simple DataTables JS -->
   <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
-
-  <!-- Bootstrap Bundle JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
