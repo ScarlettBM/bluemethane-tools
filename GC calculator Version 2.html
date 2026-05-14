@@ -43,9 +43,9 @@
 
   <section class="alert alert-info calculator-note">
     <strong>Calculation summary:</strong><br>
-    Total liquid volume = (Wf - Wi) / Density<br>
-    V_sludge = Total liquid volume - Brine_vol - V_poison<br>
-    V_headspace = V_vial - Total liquid volume<br>
+    Liquid volume from weight = (Wf - Wi) / Density<br>
+    V_headspace = Brine_vol + Liquid volume from weight<br>
+    V_sludge = V_vial - V_poison - V_headspace<br>
     Cg = Concent_CH4 (%) / 100<br>
     Pg = Cg × Total_P<br>
     C_A = (Molar_water × Pg × Molecular_mass_CH4 × 1000) / Kh<br>
@@ -196,9 +196,9 @@
         };
       }
 
-      const totalLiquidMl = (wfG - wiG) / densityGml;
-      const sludgeMl = totalLiquidMl - brineMl - poisonMl;
-      const headspaceMl = vialMl - totalLiquidMl;
+      const liquidVolumeFromWeightMl = (wfG - wiG) / densityGml;
+      const headspaceMl = brineMl + liquidVolumeFromWeightMl;
+      const sludgeMl = vialMl - poisonMl - headspaceMl;
 
       if (sludgeMl <= 0 || headspaceMl <= 0) {
         return {
