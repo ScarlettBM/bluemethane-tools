@@ -19,37 +19,38 @@
 <body class="container">
   <h2 class="text-center">GC Calculator Version 2</h2>
   <p class="text-center text-muted mb-3">
-    Calculates methane from GC concentration, vial weights, sludge density, brine volume, vial volume and poison volume.
+    Uses uploaded headspace and sludge volumes, then calculates methane concentration.
   </p>
 
   <section class="card shadow-sm mt-4">
     <div class="card-body text-center">
       <h5 class="card-title">Upload GC Input File</h5>
-      <p class="small-muted">
-        Use a clean Excel sheet with the raw input columns only. The calculator will generate the calculation columns.
-      </p>
+      <p class="small-muted">Upload the clean GC sheet with the exact columns below.</p>
       <input type="file" id="fileInput" accept=".xlsx" class="form-control mx-auto" style="max-width: 450px;">
       <div class="mt-2" id="fileUploadStatus"></div>
     </div>
   </section>
 
   <section class="alert alert-secondary mt-4 calculator-note">
-    <strong>Required input columns:</strong><br>
-    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_poison (mL)<br><br>
-    <strong>Optional input column:</strong> T_sample (°C). If missing, the calculator assumes 21°C.<br><br>
-    <strong>Calculated by the tool:</strong><br>
-    V_headspace (mL), V_sludge (mL), Cg, Total_P, Pg, Molar_water, T_reference, T_sample (K), Kh, Molecular_mass_CH4, Standard volume at NTP, C_A, C_AH, TC.
+    <strong>Expected uploaded columns:</strong><br>
+    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_headspace (mL), V_poison (mL), V_sludge (mL), T_sample (°C)
+    <br><br>
+    <strong>Important:</strong> this version does not recalculate V_headspace or V_sludge. It uses the values already present in the uploaded Excel file.
   </section>
 
   <section class="alert alert-info calculator-note">
-    <strong>Calculation summary:</strong><br>
-    Liquid volume from weight = (Wf - Wi) / Density<br>
-    V_headspace = Brine_vol + Liquid volume from weight<br>
-    V_sludge = V_vial - V_poison - V_headspace<br>
-    Cg = Concent_CH4 (%) / 100<br>
+    <strong>Calculated by the tool:</strong><br>
+    Cg = Concent_CH4 (%) × 10^-2<br>
+    Total_P = 1 atm<br>
     Pg = Cg × Total_P<br>
-    C_A = (Molar_water × Pg × Molecular_mass_CH4 × 1000) / Kh<br>
-    C_AH = (Cg × Molecular_mass_CH4 × 1000 / Standard volume at NTP) × (V_headspace / V_sludge) × (T_reference / T_sample_K)<br>
+    Molar_water = 55.5 mol/L<br>
+    T_reference = 273.15 K<br>
+    T_sample (K) = T_reference + T_sample (°C)<br>
+    Kh = 1 / EXP(-338.217 + (13282.1 / T_sample_K) + 51.9144 × LN(T_sample_K) - 0.0425831 × T_sample_K)<br>
+    Molecular_mass_CH4 = 16.04 g/mol<br>
+    Standard volume at NTP = 22.4 L/mol<br>
+    C_A = Molar_water × (Pg / Kh) × Molecular_mass_CH4 × 10^3<br>
+    C_AH = (V_headspace / V_sludge) × Cg × ((Molecular_mass_CH4 / Standard volume at NTP) × (T_reference / T_sample_K)) × 10^3<br>
     TC = C_A + C_AH
   </section>
 
@@ -89,7 +90,7 @@
     let currentWorkbook;
     let processedData = [];
 
-    const inputColumns = [
+    const uploadedColumns = [
       "Sampling date",
       "Date_GC",
       "Sample_name",
@@ -101,19 +102,18 @@
       "Density (g/ml)",
       "Brine_vol (mL)",
       "V_vial (mL)",
-      "V_poison (mL)"
+      "V_headspace (mL)",
+      "V_poison (mL)",
+      "V_sludge (mL)",
+      "T_sample (°C)"
     ];
 
-    const outputColumns = [
-      ...inputColumns,
-      "V_headspace (mL)",
-      "V_sludge (mL)",
+    const calculatedColumns = [
       "Cg  (vol CH4/vol sample)",
       "Total_P (atm)",
       "Pg (atm CH4)",
       "Molar_water (mol/L)",
       "T_reference (K)",
-      "T_sample (°C)",
       "T_sample (K)",
       "Kh (atm/molfraction)",
       "Molecular_mass_CH4 (g/mol)",
@@ -124,156 +124,174 @@
       "Calculation check"
     ];
 
+    const outputColumns = uploadedColumns.concat(calculatedColumns);
+
     function parseNumber(value) {
       if (value === null || value === undefined || value === "") return NaN;
       if (typeof value === "number") return value;
       return parseFloat(String(value).trim().replace(",", "."));
     }
 
-    function getValue(row, possibleNames) {
+    function normaliseColumnName(name) {
+      return String(name || "").trim().toLowerCase().split(" ").filter(Boolean).join(" ");
+    }
+
+    function getValue(row, columnName) {
+      const wanted = normaliseColumnName(columnName);
       const keys = Object.keys(row);
-      for (const name of possibleNames) {
-        const matchedKey = keys.find(key => key.trim().toLowerCase() === name.trim().toLowerCase());
-        if (matchedKey !== undefined) return row[matchedKey];
+      for (let i = 0; i < keys.length; i++) {
+        if (normaliseColumnName(keys[i]) === wanted) return row[keys[i]];
       }
-      return undefined;
+      return "";
     }
 
-    function getNumber(row, possibleNames, defaultValue = NaN) {
-      const value = getValue(row, possibleNames);
-      const parsed = parseNumber(value);
-      return isNaN(parsed) ? defaultValue : parsed;
+    function getNumber(row, columnName) {
+      return parseNumber(getValue(row, columnName));
     }
 
-    function round(value, decimals = 3) {
-      if (isNaN(value)) return "N/A";
+    function roundNumber(value, decimals) {
+      if (isNaN(value) || !isFinite(value)) return "";
       return Number(value.toFixed(decimals));
     }
 
+    function formatDateIfNeeded(value) {
+      if (typeof value === "number" && value > 30000) {
+        const utcDays = Math.floor(value - 25569);
+        const date = new Date(utcDays * 86400 * 1000);
+        const day = String(date.getDate()).padStart(2, "0");
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const year = date.getFullYear();
+        return day + "/" + month + "/" + year;
+      }
+      return value;
+    }
+
     function calculateRow(row) {
-      const methanePercent = getNumber(row, ["Concent_CH4 (%)", "Concent_CH4", "CH4%"]);
-      const wiG = getNumber(row, ["Wi (g)", "Wi"]);
-      const wfG = getNumber(row, ["Wf (g)", "Wf"]);
-      const densityGml = getNumber(row, ["Density (g/ml)", "Density (g/mL)", "Density"], 1);
-      const brineMl = getNumber(row, ["Brine_vol (mL)", "Brine_vol", "Brine volume (mL)"], 0);
-      const vialMl = getNumber(row, ["V_vial (mL)", "V_vial", "Vial volume (mL)"]);
-      const poisonMl = getNumber(row, ["V_poison (mL)", "V_poison", "Poison volume (mL)"], 0);
+      const methanePercent = getNumber(row, "Concent_CH4 (%)");
+      const headspaceVolumeMl = getNumber(row, "V_headspace (mL)");
+      const sludgeVolumeMl = getNumber(row, "V_sludge (mL)");
+      const sampleTemperatureC = getNumber(row, "T_sample (°C)");
 
       const totalPressureAtm = 1;
       const molarWater = 55.5;
-      const referenceTempK = 273.15;
-      const sampleTempC = getNumber(row, ["T_sample (°C)", "T_sample", "T (°C)"], 21);
-      const sampleTempK = sampleTempC + 273.15;
-      const kh = 36407.57609;
-      const methaneMass = 16.04;
+      const referenceTemperatureK = 273.15;
+      const methaneMolecularMass = 16.04;
       const standardVolumeNtp = 22.4;
 
       const cleanRow = {};
-      inputColumns.forEach(col => {
-        if (col === "Density (g/ml)") cleanRow[col] = isNaN(densityGml) ? 1 : densityGml;
-        else cleanRow[col] = getValue(row, [col]) ?? "";
+      uploadedColumns.forEach(function(col) {
+        const value = getValue(row, col);
+        cleanRow[col] = (col === "Sampling date" || col === "Date_GC") ? formatDateIfNeeded(value) : value;
       });
 
-      if (isNaN(methanePercent) || isNaN(wiG) || isNaN(wfG) || isNaN(densityGml) || densityGml <= 0 || isNaN(vialMl)) {
-        return {
-          ...cleanRow,
-          "V_headspace (mL)": "N/A",
-          "V_sludge (mL)": "N/A",
-          "Cg  (vol CH4/vol sample)": "N/A",
+      const missingFields = [];
+      if (isNaN(methanePercent)) missingFields.push("Concent_CH4 (%)");
+      if (isNaN(headspaceVolumeMl)) missingFields.push("V_headspace (mL)");
+      if (isNaN(sludgeVolumeMl)) missingFields.push("V_sludge (mL)");
+      if (isNaN(sampleTemperatureC)) missingFields.push("T_sample (°C)");
+
+      if (missingFields.length > 0) {
+        return Object.assign({}, cleanRow, {
+          "Cg  (vol CH4/vol sample)": "",
           "Total_P (atm)": totalPressureAtm,
-          "Pg (atm CH4)": "N/A",
+          "Pg (atm CH4)": "",
           "Molar_water (mol/L)": molarWater,
-          "T_reference (K)": referenceTempK,
-          "T_sample (°C)": sampleTempC,
-          "T_sample (K)": sampleTempK,
-          "Kh (atm/molfraction)": kh,
-          "Molecular_mass_CH4 (g/mol)": methaneMass,
+          "T_reference (K)": referenceTemperatureK,
+          "T_sample (K)": "",
+          "Kh (atm/molfraction)": "",
+          "Molecular_mass_CH4 (g/mol)": methaneMolecularMass,
           "Standard volume at NTP (L/mol)": standardVolumeNtp,
-          "C_A (mg/L)": "N/A",
-          "C_AH (mg/L)": "N/A",
-          "TC (mg/L)": "N/A",
-          "Calculation check": "Missing required input"
-        };
+          "C_A (mg/L)": "",
+          "C_AH (mg/L)": "",
+          "TC (mg/L)": "",
+          "Calculation check": "Missing: " + missingFields.join(", ")
+        });
       }
 
-      const liquidVolumeFromWeightMl = (wfG - wiG) / densityGml;
-      const headspaceMl = brineMl + liquidVolumeFromWeightMl;
-      const sludgeMl = vialMl - poisonMl - headspaceMl;
-
-      if (sludgeMl <= 0 || headspaceMl <= 0) {
-        return {
-          ...cleanRow,
-          "V_headspace (mL)": round(headspaceMl),
-          "V_sludge (mL)": round(sludgeMl),
-          "Cg  (vol CH4/vol sample)": "N/A",
+      if (sludgeVolumeMl <= 0 || headspaceVolumeMl <= 0) {
+        return Object.assign({}, cleanRow, {
+          "Cg  (vol CH4/vol sample)": "",
           "Total_P (atm)": totalPressureAtm,
-          "Pg (atm CH4)": "N/A",
+          "Pg (atm CH4)": "",
           "Molar_water (mol/L)": molarWater,
-          "T_reference (K)": referenceTempK,
-          "T_sample (°C)": sampleTempC,
-          "T_sample (K)": sampleTempK,
-          "Kh (atm/molfraction)": kh,
-          "Molecular_mass_CH4 (g/mol)": methaneMass,
+          "T_reference (K)": referenceTemperatureK,
+          "T_sample (K)": roundNumber(referenceTemperatureK + sampleTemperatureC, 3),
+          "Kh (atm/molfraction)": "",
+          "Molecular_mass_CH4 (g/mol)": methaneMolecularMass,
           "Standard volume at NTP (L/mol)": standardVolumeNtp,
-          "C_A (mg/L)": "N/A",
-          "C_AH (mg/L)": "N/A",
-          "TC (mg/L)": "N/A",
-          "Calculation check": "Check volumes"
-        };
+          "C_A (mg/L)": "",
+          "C_AH (mg/L)": "",
+          "TC (mg/L)": "",
+          "Calculation check": "Check uploaded volumes"
+        });
       }
 
-      const cg = methanePercent / 100;
-      const pg = cg * totalPressureAtm;
-      const cA = (molarWater * pg * methaneMass * 1000) / kh;
-      const cAH = (cg * methaneMass * 1000 / standardVolumeNtp) * (headspaceMl / sludgeMl) * (referenceTempK / sampleTempK);
-      const tc = cA + cAH;
+      const methaneFraction = methanePercent * Math.pow(10, -2);
+      const methanePartialPressureAtm = methaneFraction * totalPressureAtm;
+      const sampleTemperatureK = referenceTemperatureK + sampleTemperatureC;
 
-      return {
-        ...cleanRow,
-        "V_headspace (mL)": round(headspaceMl, 6),
-        "V_sludge (mL)": round(sludgeMl, 6),
-        "Cg  (vol CH4/vol sample)": round(cg, 6),
+      const kh = 1 / Math.exp(
+        -338.217 +
+        (13282.1 / sampleTemperatureK) +
+        (51.9144 * Math.log(sampleTemperatureK)) +
+        (-0.0425831 * sampleTemperatureK)
+      );
+
+      const dissolvedMethaneMgL = molarWater * (methanePartialPressureAtm / kh) * methaneMolecularMass * Math.pow(10, 3);
+
+      const headspaceMethaneMgL =
+        (headspaceVolumeMl / sludgeVolumeMl) *
+        methaneFraction *
+        ((methaneMolecularMass / standardVolumeNtp) * (referenceTemperatureK / sampleTemperatureK)) *
+        Math.pow(10, 3);
+
+      const totalMethaneMgL = dissolvedMethaneMgL + headspaceMethaneMgL;
+
+      return Object.assign({}, cleanRow, {
+        "Cg  (vol CH4/vol sample)": roundNumber(methaneFraction, 6),
         "Total_P (atm)": totalPressureAtm,
-        "Pg (atm CH4)": round(pg, 6),
+        "Pg (atm CH4)": roundNumber(methanePartialPressureAtm, 6),
         "Molar_water (mol/L)": molarWater,
-        "T_reference (K)": referenceTempK,
-        "T_sample (°C)": sampleTempC,
-        "T_sample (K)": round(sampleTempK, 3),
-        "Kh (atm/molfraction)": kh,
-        "Molecular_mass_CH4 (g/mol)": methaneMass,
+        "T_reference (K)": referenceTemperatureK,
+        "T_sample (K)": roundNumber(sampleTemperatureK, 3),
+        "Kh (atm/molfraction)": roundNumber(kh, 6),
+        "Molecular_mass_CH4 (g/mol)": methaneMolecularMass,
         "Standard volume at NTP (L/mol)": standardVolumeNtp,
-        "C_A (mg/L)": round(cA, 6),
-        "C_AH (mg/L)": round(cAH, 6),
-        "TC (mg/L)": round(tc, 6),
+        "C_A (mg/L)": roundNumber(dissolvedMethaneMgL, 6),
+        "C_AH (mg/L)": roundNumber(headspaceMethaneMgL, 6),
+        "TC (mg/L)": roundNumber(totalMethaneMgL, 6),
         "Calculation check": "OK"
-      };
+      });
     }
 
     function findHeaderAndReadSheet(worksheet) {
       const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
 
-      const headerIndex = rows.findIndex(row => {
-        const cleaned = row.map(cell => String(cell).trim().toLowerCase());
-        return cleaned.includes("sampling date") && cleaned.includes("date_gc") && cleaned.includes("sample_name");
+      const headerIndex = rows.findIndex(function(row) {
+        const cleaned = row.map(function(cell) { return normaliseColumnName(cell); });
+        return cleaned.includes("sampling date") &&
+               cleaned.includes("date_gc") &&
+               cleaned.includes("sample_name") &&
+               cleaned.includes("concent_ch4 (%)");
       });
 
       if (headerIndex === -1) {
-        alert("Could not find the header row. The sheet must contain Sampling date, Date_GC, and Sample_name.");
+        alert("Could not find the header row. Please check the sheet contains Sampling date, Date_GC, Sample_name and Concent_CH4 (%).");
         return [];
       }
 
-      const headers = rows[headerIndex].map(h => String(h).trim());
+      const headers = rows[headerIndex].map(function(h) { return String(h).trim(); });
       const dataRows = rows.slice(headerIndex + 1);
 
-      return dataRows.map(row => {
+      return dataRows.map(function(row) {
         const obj = {};
-        headers.forEach((header, i) => {
-          if (header !== "") obj[header] = row[i] ?? "";
+        headers.forEach(function(header, i) {
+          if (header !== "") obj[header] = row[i] !== undefined ? row[i] : "";
         });
         return obj;
-      }).filter(row => {
-        return String(row["Sample_name"] || "").trim() !== "" &&
-               String(row["Concent_CH4 (%)"] || "").trim() !== "";
+      }).filter(function(row) {
+        return String(getValue(row, "Sample_name") || "").trim() !== "" &&
+               String(getValue(row, "Concent_CH4 (%)") || "").trim() !== "";
       });
     }
 
@@ -283,8 +301,9 @@
         return;
       }
 
-      processedData = jsonData.map(row => calculateRow(row));
-      document.getElementById("fileUploadStatus").textContent = `Processed ${processedData.length} rows successfully.`;
+      processedData = jsonData.map(function(row) { return calculateRow(row); });
+      const okRows = processedData.filter(function(row) { return row["Calculation check"] === "OK"; }).length;
+      document.getElementById("fileUploadStatus").textContent = "Processed " + processedData.length + " rows. " + okRows + " rows calculated successfully.";
       renderTable(processedData);
     }
 
@@ -299,17 +318,17 @@
       thead.innerHTML = "";
       tbody.innerHTML = "";
 
-      outputColumns.forEach(col => {
+      outputColumns.forEach(function(col) {
         const th = document.createElement("th");
         th.textContent = col;
         thead.appendChild(th);
       });
 
-      data.forEach(row => {
+      data.forEach(function(row) {
         const tr = document.createElement("tr");
-        outputColumns.forEach(col => {
+        outputColumns.forEach(function(col) {
           const td = document.createElement("td");
-          td.textContent = row[col] ?? "";
+          td.textContent = row[col] !== undefined && row[col] !== null ? row[col] : "";
           tr.appendChild(td);
         });
         tbody.appendChild(tr);
@@ -330,7 +349,7 @@
         if (currentWorkbook.SheetNames.length > 1) {
           const sheetList = document.getElementById("sheetList");
           sheetList.innerHTML = "";
-          currentWorkbook.SheetNames.forEach(sheetName => {
+          currentWorkbook.SheetNames.forEach(function(sheetName) {
             const option = document.createElement("option");
             option.value = sheetName;
             option.textContent = sheetName;
