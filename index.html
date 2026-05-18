@@ -1,53 +1,102 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<title>Bluemethane Tools</title>
+  <meta charset="UTF-8">
+  <title>Bluemethane Tools</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<style>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-body{
-font-family: Arial;
-text-align:center;
-margin-top:80px;
-background:#f4f6f8;
-}
+  <style>
+    body {
+      margin-top: 40px;
+      background-color: #f8f9fa;
+    }
 
-h1{
-color:#203060;
-}
+    .tool-card {
+      transition: 0.2s ease;
+      height: 100%;
+    }
 
-.button{
-display:inline-block;
-padding:15px 25px;
-margin:15px;
-font-size:18px;
-background:#203060;
-color:white;
-text-decoration:none;
-border-radius:6px;
-}
+    .tool-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
 
-.button:hover{
-background:#00BCDB;
-}
-
-</style>
-
+    a {
+      text-decoration: none;
+    }
+  </style>
 </head>
 
 <body>
+  <div class="container">
 
-<h1>Bluemethane Tools</h1>
+    <h1 class="text-center mb-2">Bluemethane Tools</h1>
+    <p class="text-center text-muted mb-5">
+      Internal calculators and analysis tools
+    </p>
 
-<p>Select a tool:</p>
+    <div class="row g-4">
 
-<a class="button" href="GC_calculator.html">GC Calculator</a>
+      <div class="col-md-6">
+        <a href="./GC_calculator.html">
+          <div class="card tool-card">
+            <div class="card-body">
+              <h4 class="card-title">GC Calculator Version 1</h4>
+              <p class="card-text text-muted">
+                Original GC methane calculator.
+              </p>
+              <button class="btn btn-outline-primary">Open</button>
+            </div>
+          </div>
+        </a>
+      </div>
 
-<a class="button" href="Chemical_dosing_calculator2.html">Chemical Dosing Calculator</a>
+      <div class="col-md-6">
+        <a href="./GC_calculator_Version_2.html">
+          <div class="card tool-card">
+            <div class="card-body">
+              <h4 class="card-title">GC Calculator Version 2</h4>
+              <p class="card-text text-muted">
+                Updated GC calculator using uploaded headspace and sludge volumes.
+              </p>
+              <button class="btn btn-primary">Open</button>
+            </div>
+          </div>
+        </a>
+      </div>
 
-<a class="button" href="hydroponics_analysis.html">Hydroponics + Horiba Analysis</a>
+      <div class="col-md-6">
+        <a href="./Chemical_dosing_calculator2.html">
+          <div class="card tool-card">
+            <div class="card-body">
+              <h4 class="card-title">Chemical Dosing Calculator</h4>
+              <p class="card-text text-muted">
+                Calculate NaOH dosing and pump settings.
+              </p>
+              <button class="btn btn-outline-success">Open</button>
+            </div>
+          </div>
+        </a>
+      </div>
 
-<a href="065 GC calculator.html" class="btn btn-outline-primary me-2">065 GC Calculator</a>
-  
+      <div class="col-md-6">
+        <a href="./hydroponics_analysis.html">
+          <div class="card tool-card">
+            <div class="card-body">
+              <h4 class="card-title">Hydroponics + Horiba Analysis</h4>
+              <p class="card-text text-muted">
+                Compare sensor data with Horiba measurements.
+              </p>
+              <button class="btn btn-outline-info">Open</button>
+            </div>
+          </div>
+        </a>
+      </div>
+
+    </div>
+
+  </div>
 </body>
 </html>
