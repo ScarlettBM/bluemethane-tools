@@ -19,42 +19,44 @@
 <body class="container">
   <h2 class="text-center">GC Calculator Version 2</h2>
 
- <div class="text-center mb-3">
-  <a href="https://scarlettbm.github.io/bluemethane-tools/GC_calculator.html" class="btn btn-outline-primary me-2">
-    GC Calculator Version 1
-  </a>
+  <div class="text-center mb-3">
+    <a href="https://scarlettbm.github.io/bluemethane-tools/GC_calculator.html" class="btn btn-outline-primary me-2">
+      GC Calculator Version 1
+    </a>
 
-  <a href="https://scarlettbm.github.io/bluemethane-tools/GC_calculator_Version_2.html" class="btn btn-primary me-2">
-    GC Calculator Version 2
-  </a>
+    <a href="https://scarlettbm.github.io/bluemethane-tools/GC_calculator_Version_2.html" class="btn btn-primary me-2">
+      GC Calculator Version 2
+    </a>
 
-  <a href="https://scarlettbm.github.io/bluemethane-tools/Chemical_dosing_calculator2.html" class="btn btn-outline-success me-2">
-    Chemical Dosing Calculator
-  </a>
+    <a href="https://scarlettbm.github.io/bluemethane-tools/Chemical_dosing_calculator2.html" class="btn btn-outline-success me-2">
+      Chemical Dosing Calculator
+    </a>
 
-  <a href="https://scarlettbm.github.io/bluemethane-tools/hydroponics_analysis.html" class="btn btn-outline-info">
-    Hydroponics + Horiba Analysis
-  </a>
-</div>
+    <a href="https://scarlettbm.github.io/bluemethane-tools/hydroponics_analysis.html" class="btn btn-outline-info">
+      Hydroponics + Horiba Analysis
+    </a>
+  </div>
 
   <p class="text-center text-muted mb-3">
-    Uses uploaded vial, headspace and poison volumes to calculate sludge volume, then calculates methane concentration.
+    Uses uploaded weights, density, brine volume, vial volume and poison volume to calculate headspace and sludge volume, then calculates methane concentration.
   </p>
 
   <section class="card shadow-sm mt-4">
     <div class="card-body text-center">
       <h5 class="card-title">Upload GC Input File</h5>
-      <p class="small-muted">Upload the clean GC sheet with the exact columns below.</p>
+      <p class="small-muted">Upload the clean GC sheet with the exact required columns below.</p>
       <input type="file" id="fileInput" accept=".xlsx" class="form-control mx-auto" style="max-width: 450px;">
       <div class="mt-2" id="fileUploadStatus"></div>
     </div>
   </section>
 
   <section class="alert alert-secondary mt-4 calculator-note">
-    <strong>Expected uploaded columns:</strong><br>
-    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_headspace (mL), V_poison (mL), V_sludge (mL), T_sample (°C)
+    <strong>Required uploaded columns:</strong><br>
+    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_poison (mL), T_sample (°C)
     <br><br>
-   <strong>Important:</strong> this version uses uploaded V_headspace, V_vial, and V_poison to calculate V_sludge as: V_sludge = V_vial - V_headspace - V_poison.
+    <strong>Calculated volume columns:</strong><br>
+    V_headspace (mL) = ((Wf - Wi) / Density) + Brine_vol<br>
+    V_sludge (mL) = V_vial - V_headspace - V_poison
   </section>
 
   <section class="alert alert-info calculator-note">
@@ -109,7 +111,7 @@
     let currentWorkbook;
     let processedData = [];
 
-    const uploadedColumns = [
+    const outputColumns = [
       "Sampling date",
       "Date_GC",
       "Sample_name",
@@ -123,10 +125,8 @@
       "V_vial (mL)",
       "V_headspace (mL)",
       "V_poison (mL)",
-      "T_sample (°C)"
-    ];
-
-    const calculatedColumns = [
+      "V_sludge (mL)",
+      "T_sample (°C)",
       "Cg  (vol CH4/vol sample)",
       "Total_P (atm)",
       "Pg (atm CH4)",
@@ -141,8 +141,6 @@
       "TC (mg/L)",
       "Calculation check"
     ];
-
-    const outputColumns = uploadedColumns.concat(calculatedColumns);
 
     function parseNumber(value) {
       if (value === null || value === undefined || value === "") return NaN;
@@ -186,11 +184,16 @@
 
     function calculateRow(row) {
       const methanePercent = getNumber(row, "Concent_CH4 (%)");
-      const headspaceVolumeMl = getNumber(row, "V_headspace (mL)");
+      const initialWeightG = getNumber(row, "Wi (g)");
+      const finalWeightG = getNumber(row, "Wf (g)");
+      const densityGml = getNumber(row, "Density (g/ml)");
+      const brineVolumeMl = getNumber(row, "Brine_vol (mL)");
       const vialVolumeMl = getNumber(row, "V_vial (mL)");
-const poisonVolumeMl = getNumber(row, "V_poison (mL)");
-const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
+      const poisonVolumeMl = getNumber(row, "V_poison (mL)");
       const sampleTemperatureC = getNumber(row, "T_sample (°C)");
+
+      const headspaceVolumeMl = ((finalWeightG - initialWeightG) / densityGml) + brineVolumeMl;
+      const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
 
       const totalPressureAtm = 1;
       const molarWater = 55.5;
@@ -199,18 +202,25 @@ const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
       const standardVolumeNtp = 22.4;
 
       const cleanRow = {};
-      uploadedColumns.forEach(function(col) {
+      outputColumns.forEach(function(col) {
         const value = getValue(row, col);
         cleanRow[col] = (col === "Sampling date" || col === "Date_GC") ? formatDateIfNeeded(value) : value;
-      }); cleanRow["V_sludge (mL)"] = roundNumber(sludgeVolumeMl, 6);
+      });
+
+      cleanRow["V_headspace (mL)"] = roundNumber(headspaceVolumeMl, 6);
+      cleanRow["V_sludge (mL)"] = roundNumber(sludgeVolumeMl, 6);
 
       const missingFields = [];
       if (isNaN(methanePercent)) missingFields.push("Concent_CH4 (%)");
-      if (isNaN(headspaceVolumeMl)) missingFields.push("V_headspace (mL)");
-     if (isNaN(vialVolumeMl)) missingFields.push("V_vial (mL)");
-if (isNaN(poisonVolumeMl)) missingFields.push("V_poison (mL)");
-if (isNaN(sludgeVolumeMl)) missingFields.push("Calculated V_sludge (mL)");
+      if (isNaN(initialWeightG)) missingFields.push("Wi (g)");
+      if (isNaN(finalWeightG)) missingFields.push("Wf (g)");
+      if (isNaN(densityGml)) missingFields.push("Density (g/ml)");
+      if (isNaN(brineVolumeMl)) missingFields.push("Brine_vol (mL)");
+      if (isNaN(vialVolumeMl)) missingFields.push("V_vial (mL)");
+      if (isNaN(poisonVolumeMl)) missingFields.push("V_poison (mL)");
       if (isNaN(sampleTemperatureC)) missingFields.push("T_sample (°C)");
+      if (isNaN(headspaceVolumeMl)) missingFields.push("Calculated V_headspace (mL)");
+      if (isNaN(sludgeVolumeMl)) missingFields.push("Calculated V_sludge (mL)");
 
       if (missingFields.length > 0) {
         return Object.assign({}, cleanRow, {
@@ -230,7 +240,7 @@ if (isNaN(sludgeVolumeMl)) missingFields.push("Calculated V_sludge (mL)");
         });
       }
 
-      if (sludgeVolumeMl <= 0 || headspaceVolumeMl <= 0) {
+      if (densityGml <= 0 || headspaceVolumeMl <= 0 || sludgeVolumeMl <= 0) {
         return Object.assign({}, cleanRow, {
           "Cg  (vol CH4/vol sample)": "",
           "Total_P (atm)": totalPressureAtm,
@@ -244,7 +254,7 @@ if (isNaN(sludgeVolumeMl)) missingFields.push("Calculated V_sludge (mL)");
           "C_A (mg/L)": "",
           "C_AH (mg/L)": "",
           "TC (mg/L)": "",
-          "Calculation check": "Check uploaded volumes"
+          "Calculation check": "Check calculated volumes"
         });
       }
 
