@@ -20,25 +20,14 @@
   <h2 class="text-center">GC Calculator Version 2</h2>
 
   <div class="text-center mb-3">
-    <a href="https://scarlettbm.github.io/bluemethane-tools/GC_calculator.html" class="btn btn-outline-primary me-2">
-      GC Calculator Version 1
-    </a>
-
-    <a href="https://scarlettbm.github.io/bluemethane-tools/GC_calculator_Version_2.html" class="btn btn-primary me-2">
-      GC Calculator Version 2
-    </a>
-
-    <a href="https://scarlettbm.github.io/bluemethane-tools/Chemical_dosing_calculator2.html" class="btn btn-outline-success me-2">
-      Chemical Dosing Calculator
-    </a>
-
-    <a href="https://scarlettbm.github.io/bluemethane-tools/hydroponics_analysis.html" class="btn btn-outline-info">
-      Hydroponics + Horiba Analysis
-    </a>
+    <a href="https://scarlettbm.github.io/bluemethane-tools/GC_calculator.html" class="btn btn-outline-primary me-2">GC Calculator Version 1</a>
+    <a href="https://scarlettbm.github.io/bluemethane-tools/GC_calculator_Version_2.html" class="btn btn-primary me-2">GC Calculator Version 2</a>
+    <a href="https://scarlettbm.github.io/bluemethane-tools/Chemical_dosing_calculator2.html" class="btn btn-outline-success me-2">Chemical Dosing Calculator</a>
+    <a href="https://scarlettbm.github.io/bluemethane-tools/hydroponics_analysis.html" class="btn btn-outline-info">Hydroponics + Horiba Analysis</a>
   </div>
 
   <p class="text-center text-muted mb-3">
-    Uses uploaded weights, density, brine volume, vial volume and poison volume to calculate headspace and sludge volume, then calculates methane concentration.
+    Uses uploaded weights, density, brine volume, vial volume, expansion volume and poison volume to calculate corrected headspace volume, sludge volume and methane concentration.
   </p>
 
   <section class="card shadow-sm mt-4">
@@ -52,11 +41,14 @@
 
   <section class="alert alert-secondary mt-4 calculator-note">
     <strong>Required uploaded columns:</strong><br>
-    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_poison (mL), T_sample (°C)
+    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_expansion (mL), V_poison (mL), T_sample (°C)
     <br><br>
     <strong>Calculated volume columns:</strong><br>
     V_headspace (mL) = ((Wf - Wi) / Density) + Brine_vol<br>
-    V_sludge (mL) = V_vial - V_headspace - V_poison
+    V_headspace corr (mL) = V_headspace + V_expansion<br>
+    V_sludge (mL) = V_vial - V_headspace - V_poison<br>
+    <br>
+    <strong>Important:</strong> C_AH uses V_headspace corr, not uncorrected V_headspace.
   </section>
 
   <section class="alert alert-info calculator-note">
@@ -71,7 +63,7 @@
     Molecular_mass_CH4 = 16.04 g/mol<br>
     Standard volume at NTP = 22.4 L/mol<br>
     C_A = Molar_water × (Pg / Kh) × Molecular_mass_CH4 × 10^3<br>
-    C_AH = (V_headspace / V_sludge) × Cg × ((Molecular_mass_CH4 / Standard volume at NTP) × (T_reference / T_sample_K)) × 10^3<br>
+    C_AH = (V_headspace corr / V_sludge) × Cg × ((Molecular_mass_CH4 / Standard volume at NTP) × (T_reference / T_sample_K)) × 10^3<br>
     TC = C_A + C_AH
   </section>
 
@@ -123,7 +115,9 @@
       "Density (g/ml)",
       "Brine_vol (mL)",
       "V_vial (mL)",
+      "V_expansion (mL)",
       "V_headspace (mL)",
+      "V_headspace corr (mL)",
       "V_poison (mL)",
       "V_sludge (mL)",
       "T_sample (°C)",
@@ -189,10 +183,12 @@
       const densityGml = getNumber(row, "Density (g/ml)");
       const brineVolumeMl = getNumber(row, "Brine_vol (mL)");
       const vialVolumeMl = getNumber(row, "V_vial (mL)");
+      const expansionVolumeMl = getNumber(row, "V_expansion (mL)");
       const poisonVolumeMl = getNumber(row, "V_poison (mL)");
       const sampleTemperatureC = getNumber(row, "T_sample (°C)");
 
       const headspaceVolumeMl = ((finalWeightG - initialWeightG) / densityGml) + brineVolumeMl;
+      const correctedHeadspaceVolumeMl = headspaceVolumeMl + expansionVolumeMl;
       const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
 
       const totalPressureAtm = 1;
@@ -208,6 +204,7 @@
       });
 
       cleanRow["V_headspace (mL)"] = roundNumber(headspaceVolumeMl, 6);
+      cleanRow["V_headspace corr (mL)"] = roundNumber(correctedHeadspaceVolumeMl, 6);
       cleanRow["V_sludge (mL)"] = roundNumber(sludgeVolumeMl, 6);
 
       const missingFields = [];
@@ -217,9 +214,11 @@
       if (isNaN(densityGml)) missingFields.push("Density (g/ml)");
       if (isNaN(brineVolumeMl)) missingFields.push("Brine_vol (mL)");
       if (isNaN(vialVolumeMl)) missingFields.push("V_vial (mL)");
+      if (isNaN(expansionVolumeMl)) missingFields.push("V_expansion (mL)");
       if (isNaN(poisonVolumeMl)) missingFields.push("V_poison (mL)");
       if (isNaN(sampleTemperatureC)) missingFields.push("T_sample (°C)");
       if (isNaN(headspaceVolumeMl)) missingFields.push("Calculated V_headspace (mL)");
+      if (isNaN(correctedHeadspaceVolumeMl)) missingFields.push("Calculated V_headspace corr (mL)");
       if (isNaN(sludgeVolumeMl)) missingFields.push("Calculated V_sludge (mL)");
 
       if (missingFields.length > 0) {
@@ -240,7 +239,7 @@
         });
       }
 
-      if (densityGml <= 0 || headspaceVolumeMl <= 0 || sludgeVolumeMl <= 0) {
+      if (densityGml <= 0 || headspaceVolumeMl <= 0 || correctedHeadspaceVolumeMl <= 0 || sludgeVolumeMl <= 0) {
         return Object.assign({}, cleanRow, {
           "Cg  (vol CH4/vol sample)": "",
           "Total_P (atm)": totalPressureAtm,
@@ -272,7 +271,7 @@
       const dissolvedMethaneMgL = molarWater * (methanePartialPressureAtm / kh) * methaneMolecularMass * Math.pow(10, 3);
 
       const headspaceMethaneMgL =
-        (headspaceVolumeMl / sludgeVolumeMl) *
+        (correctedHeadspaceVolumeMl / sludgeVolumeMl) *
         methaneFraction *
         ((methaneMolecularMass / standardVolumeNtp) * (referenceTemperatureK / sampleTemperatureK)) *
         Math.pow(10, 3);
