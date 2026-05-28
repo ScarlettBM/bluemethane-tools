@@ -54,7 +54,7 @@
     <strong>Expected uploaded columns:</strong><br>
     Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_headspace (mL), V_poison (mL), V_sludge (mL), T_sample (°C)
     <br><br>
-    <strong>Important:</strong> this version does not recalculate V_headspace or V_sludge. It uses the values already present in the uploaded Excel file.
+   <strong>Important:</strong> this version uses uploaded V_headspace, V_vial, and V_poison to calculate V_sludge as: V_sludge = V_vial - V_headspace - V_poison.
   </section>
 
   <section class="alert alert-info calculator-note">
@@ -188,7 +188,9 @@
     function calculateRow(row) {
       const methanePercent = getNumber(row, "Concent_CH4 (%)");
       const headspaceVolumeMl = getNumber(row, "V_headspace (mL)");
-      const sludgeVolumeMl = getNumber(row, "V_sludge (mL)");
+      const vialVolumeMl = getNumber(row, "V_vial (mL)");
+const poisonVolumeMl = getNumber(row, "V_poison (mL)");
+const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
       const sampleTemperatureC = getNumber(row, "T_sample (°C)");
 
       const totalPressureAtm = 1;
@@ -201,12 +203,14 @@
       uploadedColumns.forEach(function(col) {
         const value = getValue(row, col);
         cleanRow[col] = (col === "Sampling date" || col === "Date_GC") ? formatDateIfNeeded(value) : value;
-      });
+      }); cleanRow["V_sludge (mL)"] = roundNumber(sludgeVolumeMl, 6);
 
       const missingFields = [];
       if (isNaN(methanePercent)) missingFields.push("Concent_CH4 (%)");
       if (isNaN(headspaceVolumeMl)) missingFields.push("V_headspace (mL)");
-      if (isNaN(sludgeVolumeMl)) missingFields.push("V_sludge (mL)");
+     if (isNaN(vialVolumeMl)) missingFields.push("V_vial (mL)");
+if (isNaN(poisonVolumeMl)) missingFields.push("V_poison (mL)");
+if (isNaN(sludgeVolumeMl)) missingFields.push("Calculated V_sludge (mL)");
       if (isNaN(sampleTemperatureC)) missingFields.push("T_sample (°C)");
 
       if (missingFields.length > 0) {
