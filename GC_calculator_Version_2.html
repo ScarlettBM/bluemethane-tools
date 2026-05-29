@@ -179,10 +179,14 @@
       const headspaceVolumeMl = getNumber(row, "V_headspace (mL)");
       const expansionVolumeMl = getNumber(row, "V_expansion (mL)");
       const sampleTemperatureC = getNumber(row, "T_sample (°C)");
+      const poisonVolumeMl = getNumber(row, "V_poison (mL)");
 
       const correctedHeadspaceVolumeMl = headspaceVolumeMl + expansionVolumeMl;
       const poisonVolumeMl = getNumber(row, "V_poison (mL)");
-const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
+const sludgeVolumeMl =
+  vialVolumeMl -
+  headspaceVolumeMl -
+  poisonVolumeMl;
 
       const totalPressureAtm = 1;
       const molarWater = 55.5;
@@ -206,6 +210,7 @@ const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
       if (isNaN(expansionVolumeMl)) missingFields.push("V_expansion (mL)");
       if (isNaN(sampleTemperatureC)) missingFields.push("T_sample (°C)");
       if (isNaN(poisonVolumeMl)) missingFields.push("V_poison (mL)");
+ 
 
       if (missingFields.length > 0) {
         return Object.assign({}, cleanRow, {
