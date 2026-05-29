@@ -27,32 +27,29 @@
   </div>
 
   <p class="text-center text-muted mb-3">
-    Uses uploaded weights, density, brine volume, vial volume, expansion volume and poison volume to calculate corrected headspace volume, sludge volume and methane concentration.
+    Uses uploaded headspace volume and expansion volume to calculate corrected headspace volume, sludge volume and methane concentration.
   </p>
 
   <section class="card shadow-sm mt-4">
     <div class="card-body text-center">
       <h5 class="card-title">Upload GC Input File</h5>
-      <p class="small-muted">Upload the clean GC sheet with the exact required columns below.</p>
+      <p class="small-muted">Upload the clean GC sheet with the required columns below.</p>
       <input type="file" id="fileInput" accept=".xlsx" class="form-control mx-auto" style="max-width: 450px;">
       <div class="mt-2" id="fileUploadStatus"></div>
     </div>
   </section>
 
   <section class="alert alert-secondary mt-4 calculator-note">
-    <strong>Required uploaded columns:</strong><br>
-    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Concent_CH4 (%), Wi (g), Wf (g), Density (g/ml), Brine_vol (mL), V_vial (mL), V_expansion (mL), V_poison (mL), T_sample (°C)
+    <strong>Expected uploaded columns:</strong><br>
+    Sampling date, Date_GC, Sample_name, Sampling Technique, Lab_GC, Wi (g), Wf (g), Brine_vol (mL), V_vial (mL), V_headspace (mL), V_expansion (mL), T_sample (°C), Density (g/ml), Concent_CH4 (%), CO2%
     <br><br>
-    <strong>Calculated volume columns:</strong><br>
-    V_headspace (mL) = ((Wf - Wi) / Density) + Brine_vol<br>
-    V_headspace corr (mL) = V_headspace + V_expansion<br>
-    V_sludge (mL) = V_vial - V_headspace - V_poison<br>
-    <br>
-    <strong>Important:</strong> C_AH uses V_headspace corr, not uncorrected V_headspace.
+    <strong>Note:</strong> CO2% is imported and exported, but no CO2 calculation is currently applied.
   </section>
 
   <section class="alert alert-info calculator-note">
     <strong>Calculated by the tool:</strong><br>
+    V_headspace corr = V_headspace + V_expansion<br>
+    V_sludge = V_vial - V_headspace<br>
     Cg = Concent_CH4 (%) × 10^-2<br>
     Total_P = 1 atm<br>
     Pg = Cg × Total_P<br>
@@ -109,18 +106,18 @@
       "Sample_name",
       "Sampling Technique",
       "Lab_GC",
-      "Concent_CH4 (%)",
       "Wi (g)",
       "Wf (g)",
-      "Density (g/ml)",
       "Brine_vol (mL)",
       "V_vial (mL)",
-      "V_expansion (mL)",
       "V_headspace (mL)",
+      "V_expansion (mL)",
       "V_headspace corr (mL)",
-      "V_poison (mL)",
       "V_sludge (mL)",
       "T_sample (°C)",
+      "Density (g/ml)",
+      "Concent_CH4 (%)",
+      "CO2%",
       "Cg  (vol CH4/vol sample)",
       "Total_P (atm)",
       "Pg (atm CH4)",
@@ -178,18 +175,13 @@
 
     function calculateRow(row) {
       const methanePercent = getNumber(row, "Concent_CH4 (%)");
-      const initialWeightG = getNumber(row, "Wi (g)");
-      const finalWeightG = getNumber(row, "Wf (g)");
-      const densityGml = getNumber(row, "Density (g/ml)");
-      const brineVolumeMl = getNumber(row, "Brine_vol (mL)");
       const vialVolumeMl = getNumber(row, "V_vial (mL)");
+      const headspaceVolumeMl = getNumber(row, "V_headspace (mL)");
       const expansionVolumeMl = getNumber(row, "V_expansion (mL)");
-      const poisonVolumeMl = getNumber(row, "V_poison (mL)");
       const sampleTemperatureC = getNumber(row, "T_sample (°C)");
 
-      const headspaceVolumeMl = ((finalWeightG - initialWeightG) / densityGml) + brineVolumeMl;
       const correctedHeadspaceVolumeMl = headspaceVolumeMl + expansionVolumeMl;
-      const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
+      const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl;
 
       const totalPressureAtm = 1;
       const molarWater = 55.5;
@@ -203,23 +195,15 @@
         cleanRow[col] = (col === "Sampling date" || col === "Date_GC") ? formatDateIfNeeded(value) : value;
       });
 
-      cleanRow["V_headspace (mL)"] = roundNumber(headspaceVolumeMl, 6);
       cleanRow["V_headspace corr (mL)"] = roundNumber(correctedHeadspaceVolumeMl, 6);
       cleanRow["V_sludge (mL)"] = roundNumber(sludgeVolumeMl, 6);
 
       const missingFields = [];
       if (isNaN(methanePercent)) missingFields.push("Concent_CH4 (%)");
-      if (isNaN(initialWeightG)) missingFields.push("Wi (g)");
-      if (isNaN(finalWeightG)) missingFields.push("Wf (g)");
-      if (isNaN(densityGml)) missingFields.push("Density (g/ml)");
-      if (isNaN(brineVolumeMl)) missingFields.push("Brine_vol (mL)");
       if (isNaN(vialVolumeMl)) missingFields.push("V_vial (mL)");
+      if (isNaN(headspaceVolumeMl)) missingFields.push("V_headspace (mL)");
       if (isNaN(expansionVolumeMl)) missingFields.push("V_expansion (mL)");
-      if (isNaN(poisonVolumeMl)) missingFields.push("V_poison (mL)");
       if (isNaN(sampleTemperatureC)) missingFields.push("T_sample (°C)");
-      if (isNaN(headspaceVolumeMl)) missingFields.push("Calculated V_headspace (mL)");
-      if (isNaN(correctedHeadspaceVolumeMl)) missingFields.push("Calculated V_headspace corr (mL)");
-      if (isNaN(sludgeVolumeMl)) missingFields.push("Calculated V_sludge (mL)");
 
       if (missingFields.length > 0) {
         return Object.assign({}, cleanRow, {
@@ -239,7 +223,7 @@
         });
       }
 
-      if (densityGml <= 0 || headspaceVolumeMl <= 0 || correctedHeadspaceVolumeMl <= 0 || sludgeVolumeMl <= 0) {
+      if (headspaceVolumeMl < 0 || correctedHeadspaceVolumeMl < 0 || sludgeVolumeMl <= 0) {
         return Object.assign({}, cleanRow, {
           "Cg  (vol CH4/vol sample)": "",
           "Total_P (atm)": totalPressureAtm,
@@ -268,7 +252,11 @@
         (-0.0425831 * sampleTemperatureK)
       );
 
-      const dissolvedMethaneMgL = molarWater * (methanePartialPressureAtm / kh) * methaneMolecularMass * Math.pow(10, 3);
+      const dissolvedMethaneMgL =
+        molarWater *
+        (methanePartialPressureAtm / kh) *
+        methaneMolecularMass *
+        Math.pow(10, 3);
 
       const headspaceMethaneMgL =
         (correctedHeadspaceVolumeMl / sludgeVolumeMl) *
@@ -300,14 +288,12 @@
 
       const headerIndex = rows.findIndex(function(row) {
         const cleaned = row.map(function(cell) { return normaliseColumnName(cell); });
-        return cleaned.includes("sampling date") &&
-               cleaned.includes("date_gc") &&
-               cleaned.includes("sample_name") &&
+        return cleaned.includes("sample_name") &&
                cleaned.includes("concent_ch4 (%)");
       });
 
       if (headerIndex === -1) {
-        alert("Could not find the header row. Please check the sheet contains Sampling date, Date_GC, Sample_name and Concent_CH4 (%).");
+        alert("Could not find the header row. Please check the sheet contains Sample_name and Concent_CH4 (%).");
         return [];
       }
 
@@ -321,8 +307,20 @@
         });
         return obj;
       }).filter(function(row) {
-        return String(getValue(row, "Sample_name") || "").trim() !== "" &&
-               String(getValue(row, "Concent_CH4 (%)") || "").trim() !== "";
+        const sampleName = getValue(row, "Sample_name");
+        const methaneValue = getValue(row, "Concent_CH4 (%)");
+
+        const hasSample =
+          sampleName !== undefined &&
+          sampleName !== null &&
+          String(sampleName).trim() !== "";
+
+        const hasMethane =
+          methaneValue !== undefined &&
+          methaneValue !== null &&
+          String(methaneValue).trim() !== "";
+
+        return hasSample && hasMethane;
       });
     }
 
@@ -334,7 +332,9 @@
 
       processedData = jsonData.map(function(row) { return calculateRow(row); });
       const okRows = processedData.filter(function(row) { return row["Calculation check"] === "OK"; }).length;
-      document.getElementById("fileUploadStatus").textContent = "Processed " + processedData.length + " rows. " + okRows + " rows calculated successfully.";
+      document.getElementById("fileUploadStatus").textContent =
+        "Processed " + processedData.length + " rows. " + okRows + " rows calculated successfully.";
+
       renderTable(processedData);
     }
 
@@ -373,6 +373,7 @@
 
     function handleExcelUpload(file) {
       const reader = new FileReader();
+
       reader.onload = function(e) {
         const data = new Uint8Array(e.target.result);
         currentWorkbook = XLSX.read(data, { type: "array" });
@@ -380,28 +381,33 @@
         if (currentWorkbook.SheetNames.length > 1) {
           const sheetList = document.getElementById("sheetList");
           sheetList.innerHTML = "";
+
           currentWorkbook.SheetNames.forEach(function(sheetName) {
             const option = document.createElement("option");
             option.value = sheetName;
             option.textContent = sheetName;
             sheetList.appendChild(option);
           });
+
           new bootstrap.Modal(document.getElementById("sheetSelectionModal")).show();
         } else {
           const worksheet = currentWorkbook.Sheets[currentWorkbook.SheetNames[0]];
           processSheetData(findHeaderAndReadSheet(worksheet));
         }
       };
+
       reader.readAsArrayBuffer(file);
     }
 
     document.getElementById("fileInput").addEventListener("change", function(e) {
       const file = e.target.files[0];
       if (!file) return;
+
       if (!file.name.endsWith(".xlsx")) {
         alert("Please upload a .xlsx file.");
         return;
       }
+
       document.getElementById("fileUploadStatus").textContent = "Reading file...";
       handleExcelUpload(file);
     });
@@ -409,7 +415,9 @@
     document.getElementById("selectSheetButton").addEventListener("click", function() {
       const selectedSheet = document.getElementById("sheetList").value;
       const worksheet = currentWorkbook.Sheets[selectedSheet];
+
       processSheetData(findHeaderAndReadSheet(worksheet));
+
       bootstrap.Modal.getInstance(document.getElementById("sheetSelectionModal")).hide();
     });
 
@@ -418,8 +426,10 @@
         alert("No data to download.");
         return;
       }
+
       const ws = XLSX.utils.json_to_sheet(processedData, { header: outputColumns });
       const wb = XLSX.utils.book_new();
+
       XLSX.utils.book_append_sheet(wb, ws, "GC Calculator V2");
       XLSX.writeFile(wb, "GC_calculator_version_2_output.xlsx");
     });
