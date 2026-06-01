@@ -46,23 +46,7 @@
     <strong>Note:</strong> CO2% is imported and exported, but no CO2 calculation is currently applied.
   </section>
 
-  <section class="alert alert-info calculator-note">
-    <strong>Calculated by the tool:</strong><br>
-    V_headspace corr = V_headspace + V_expansion<br>
-    V_sludge = V_vial - V_headspace<br>
-    Cg = Concent_CH4 (%) × 10^-2<br>
-    Total_P = 1 atm<br>
-    Pg = Cg × Total_P<br>
-    Molar_water = 55.5 mol/L<br>
-    T_reference = 273.15 K<br>
-    T_sample (K) = T_reference + T_sample (°C)<br>
-    Kh = 1 / EXP(-338.217 + (13282.1 / T_sample_K) + 51.9144 × LN(T_sample_K) - 0.0425831 × T_sample_K)<br>
-    Molecular_mass_CH4 = 16.04 g/mol<br>
-    Standard volume at NTP = 22.4 L/mol<br>
-    C_A = Molar_water × (Pg / Kh) × Molecular_mass_CH4 × 10^3<br>
-    C_AH = (V_headspace corr / V_sludge) × Cg × ((Molecular_mass_CH4 / Standard volume at NTP) × (T_reference / T_sample_K)) × 10^3<br>
-    TC = C_A + C_AH
-  </section>
+ 
 
   <section class="mt-4">
     <h3>Calculated Data</h3>
