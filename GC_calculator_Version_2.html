@@ -292,23 +292,13 @@ const sludgeVolumeMl =
           if (header !== "") obj[header] = row[i] !== undefined ? row[i] : "";
         });
         return obj;
-      }).filter(function(row) {
-        const sampleName = getValue(row, "Sample_name");
-        const methaneValue = getValue(row, "Concent_CH4 (%)");
+   }).filter(function(row) {
+  const sampleName = getValue(row, "Sample_name");
 
-        const hasSample =
-          sampleName !== undefined &&
-          sampleName !== null &&
-          String(sampleName).trim() !== "";
-
-        const hasMethane =
-          methaneValue !== undefined &&
-          methaneValue !== null &&
-          String(methaneValue).trim() !== "";
-
-        return hasSample && hasMethane;
-      });
-    }
+  return sampleName !== undefined &&
+         sampleName !== null &&
+         String(sampleName).trim() !== "";
+});
 
     function processSheetData(jsonData) {
       if (!jsonData || jsonData.length === 0) {
