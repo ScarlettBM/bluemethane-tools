@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -14,6 +15,7 @@
     .small-muted { font-size: 0.9rem; color: #6c757d; }
     .calculator-note { font-size: 0.95rem; }
   </style>
+
 </head>
 
 <body class="container">
@@ -38,6 +40,10 @@
       <div class="mt-2" id="fileUploadStatus"></div>
     </div>
   </section>
+
+
+
+
 
   <section class="mt-4">
     <h3>Calculated Data</h3>
@@ -81,12 +87,12 @@
       "Site",
       "Analyst",
       "Reference_1",
-      "Sample_name",
-      "Reference 1",
-      "Reference 2",
-      "Reference 3",
-      "Reference 4",
-      "Reference 5",
+  "Sample_name",
+  "Reference 1",
+  "Reference 2",
+  "Reference 3",
+  "Reference 4",
+  "Reference 5",
       "Reference 6",
       "Lab_GC",
       "Wi (g)",
@@ -114,9 +120,6 @@
       "C_A (mg/L)",
       "C_AH (mg/L)",
       "TC (mg/L)",
-      "C_A_CO2 (mg/L)",
-      "C_AH_CO2 (mg/L)",
-      "TC_CO2 (mg/L)",
       "Calculation check"
     ];
 
@@ -159,9 +162,9 @@
       }
       return value;
     }
-        function calculateRow(row) {
+
+    function calculateRow(row) {
       const methanePercent = getNumber(row, "Concent_CH4 (%)");
-      const co2Percent = getNumber(row, "CO2%");
       const vialVolumeMl = getNumber(row, "V_vial (mL)");
       const headspaceVolumeMl = getNumber(row, "V_headspace (mL)");
       const expansionVolumeMl = getNumber(row, "V_expansion (mL)");
@@ -169,16 +172,15 @@
       const poisonVolumeMl = getNumber(row, "V_poison (mL)");
 
       const correctedHeadspaceVolumeMl = headspaceVolumeMl + expansionVolumeMl;
-      const sludgeVolumeMl =
-        vialVolumeMl -
-        headspaceVolumeMl -
-        poisonVolumeMl;
+const sludgeVolumeMl =
+  vialVolumeMl -
+  headspaceVolumeMl -
+  poisonVolumeMl;
 
       const totalPressureAtm = 1;
       const molarWater = 55.5;
       const referenceTemperatureK = 273.15;
       const methaneMolecularMass = 16.04;
-      const co2MolecularMass = 44.01;
       const standardVolumeNtp = 22.4;
 
       const cleanRow = {};
@@ -197,6 +199,7 @@
       if (isNaN(expansionVolumeMl)) missingFields.push("V_expansion (mL)");
       if (isNaN(sampleTemperatureC)) missingFields.push("T_sample (°C)");
       if (isNaN(poisonVolumeMl)) missingFields.push("V_poison (mL)");
+ 
 
       if (missingFields.length > 0) {
         return Object.assign({}, cleanRow, {
@@ -212,9 +215,6 @@
           "C_A (mg/L)": "",
           "C_AH (mg/L)": "",
           "TC (mg/L)": "",
-          "C_A_CO2 (mg/L)": "",
-          "C_AH_CO2 (mg/L)": "",
-          "TC_CO2 (mg/L)": "",
           "Calculation check": "Missing: " + missingFields.join(", ")
         });
       }
@@ -233,9 +233,6 @@
           "C_A (mg/L)": "",
           "C_AH (mg/L)": "",
           "TC (mg/L)": "",
-          "C_A_CO2 (mg/L)": "",
-          "C_AH_CO2 (mg/L)": "",
-          "TC_CO2 (mg/L)": "",
           "Calculation check": "Check calculated volumes"
         });
       }
@@ -265,37 +262,6 @@
 
       const totalMethaneMgL = dissolvedMethaneMgL + headspaceMethaneMgL;
 
-      let dissolvedCO2MgL = "";
-      let headspaceCO2MgL = "";
-      let totalCO2MgL = "";
-
-      if (!isNaN(co2Percent)) {
-        const co2Fraction = co2Percent * Math.pow(10, -2);
-        const co2PartialPressureAtm = co2Fraction * totalPressureAtm;
-
-        const khCO2 = 1 / Math.exp(
-          -317.658 +
-          (17371.2 / sampleTemperatureK) +
-          (43.0607 * Math.log(sampleTemperatureK)) +
-          (-0.00219107 * sampleTemperatureK)
-        );
-
-        dissolvedCO2MgL =
-          molarWater *
-          (co2PartialPressureAtm / khCO2) *
-          co2MolecularMass *
-          Math.pow(10, 3);
-
-        headspaceCO2MgL =
-          (correctedHeadspaceVolumeMl / sludgeVolumeMl) *
-          co2Fraction *
-          ((co2MolecularMass / standardVolumeNtp) *
-          (referenceTemperatureK / sampleTemperatureK)) *
-          Math.pow(10, 3);
-
-        totalCO2MgL = dissolvedCO2MgL + headspaceCO2MgL;
-      }
-
       return Object.assign({}, cleanRow, {
         "Cg  (vol CH4/vol sample)": roundNumber(methaneFraction, 6),
         "Total_P (atm)": totalPressureAtm,
@@ -309,13 +275,11 @@
         "C_A (mg/L)": roundNumber(dissolvedMethaneMgL, 6),
         "C_AH (mg/L)": roundNumber(headspaceMethaneMgL, 6),
         "TC (mg/L)": roundNumber(totalMethaneMgL, 6),
-        "C_A_CO2 (mg/L)": roundNumber(dissolvedCO2MgL, 6),
-        "C_AH_CO2 (mg/L)": roundNumber(headspaceCO2MgL, 6),
-        "TC_CO2 (mg/L)": roundNumber(totalCO2MgL, 6),
         "Calculation check": "OK"
       });
     }
-        function findHeaderAndReadSheet(worksheet) {
+
+    function findHeaderAndReadSheet(worksheet) {
       const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "" });
 
       const headerIndex = rows.findIndex(function(row) {
@@ -338,15 +302,15 @@
           if (header !== "") obj[header] = row[i] !== undefined ? row[i] : "";
         });
         return obj;
-      }).filter(function(row) {
-        const sampleName = getValue(row, "Sample_name");
+   }).filter(function(row) {
+  const sampleName = getValue(row, "Sample_name");
 
-        return sampleName !== undefined &&
-               sampleName !== null &&
-               String(sampleName).trim() !== "";
-      });
-    }
-
+  return sampleName !== undefined &&
+         sampleName !== null &&
+         String(sampleName).trim() !== "";
+});
+      
+}
     function processSheetData(jsonData) {
       if (!jsonData || jsonData.length === 0) {
         alert("No valid data found.");
@@ -354,11 +318,7 @@
       }
 
       processedData = jsonData.map(function(row) { return calculateRow(row); });
-
-      const okRows = processedData.filter(function(row) {
-        return row["Calculation check"] === "OK";
-      }).length;
-
+      const okRows = processedData.filter(function(row) { return row["Calculation check"] === "OK"; }).length;
       document.getElementById("fileUploadStatus").textContent =
         "Processed " + processedData.length + " rows. " + okRows + " rows calculated successfully.";
 
@@ -373,7 +333,6 @@
 
       const thead = document.getElementById("tableHeaders");
       const tbody = document.getElementById("dataTable");
-
       thead.innerHTML = "";
       tbody.innerHTML = "";
 
@@ -385,13 +344,11 @@
 
       data.forEach(function(row) {
         const tr = document.createElement("tr");
-
         outputColumns.forEach(function(col) {
           const td = document.createElement("td");
           td.textContent = row[col] !== undefined && row[col] !== null ? row[col] : "";
           tr.appendChild(td);
         });
-
         tbody.appendChild(tr);
       });
 
@@ -400,7 +357,8 @@
         fixedHeight: true
       });
     }
-        function handleExcelUpload(file) {
+
+    function handleExcelUpload(file) {
       const reader = new FileReader();
 
       reader.onload = function(e) {
@@ -465,6 +423,8 @@
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/simple-datatables@latest/dist/umd/simple-datatables.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
