@@ -12,7 +12,6 @@
   <style>
     body { margin-top: 20px; }
     .small-muted { font-size: 0.9rem; color: #6c757d; }
-    .calculator-note { font-size: 0.95rem; }
   </style>
 </head>
 
@@ -27,7 +26,7 @@
   </div>
 
   <p class="text-center text-muted mb-3">
-    Uses uploaded headspace volume and expansion volume to calculate corrected headspace volume, sludge volume and methane concentration.
+    Uses uploaded headspace volume and expansion volume to calculate corrected headspace volume, sludge volume, methane and CO2 concentration.
   </p>
 
   <section class="card shadow-sm mt-4">
@@ -38,10 +37,6 @@
       <div class="mt-2" id="fileUploadStatus"></div>
     </div>
   </section>
-
-
-
- 
 
   <section class="mt-4">
     <h3>Calculated Data</h3>
@@ -85,12 +80,12 @@
       "Site",
       "Analyst",
       "Reference_1",
-  "Sample_name",
-  "Reference 1",
-  "Reference 2",
-  "Reference 3",
-  "Reference 4",
-  "Reference 5",
+      "Sample_name",
+      "Reference 1",
+      "Reference 2",
+      "Reference 3",
+      "Reference 4",
+      "Reference 5",
       "Reference 6",
       "Lab_GC",
       "Wi (g)",
@@ -108,23 +103,23 @@
       "CO2%",
       "Cg  (vol CH4/vol sample)",
       "Cg_CO2 (vol CO2/vol sample)",
-"Pg_CO2 (atm CO2)",
-"Kh_CO2 (atm/molfraction)",
-"Molecular_mass_CO2 (g/mol)",
-"C_A_CO2 (mg/L)",
-"C_AH_CO2 (mg/L)",
-"TC_CO2 (mg/L)",
       "Total_P (atm)",
       "Pg (atm CH4)",
+      "Pg_CO2 (atm CO2)",
       "Molar_water (mol/L)",
       "T_reference (K)",
       "T_sample (K)",
       "Kh (atm/molfraction)",
+      "Kh_CO2 (atm/molfraction)",
       "Molecular_mass_CH4 (g/mol)",
+      "Molecular_mass_CO2 (g/mol)",
       "Standard volume at NTP (L/mol)",
       "C_A (mg/L)",
       "C_AH (mg/L)",
       "TC (mg/L)",
+      "C_A_CO2 (mg/L)",
+      "C_AH_CO2 (mg/L)",
+      "TC_CO2 (mg/L)",
       "Calculation check"
     ];
 
@@ -178,10 +173,7 @@
       const poisonVolumeMl = getNumber(row, "V_poison (mL)");
 
       const correctedHeadspaceVolumeMl = headspaceVolumeMl + expansionVolumeMl;
-const sludgeVolumeMl =
-  vialVolumeMl -
-  headspaceVolumeMl -
-  poisonVolumeMl;
+      const sludgeVolumeMl = vialVolumeMl - headspaceVolumeMl - poisonVolumeMl;
 
       const totalPressureAtm = 1;
       const molarWater = 55.5;
@@ -206,47 +198,36 @@ const sludgeVolumeMl =
       if (isNaN(expansionVolumeMl)) missingFields.push("V_expansion (mL)");
       if (isNaN(sampleTemperatureC)) missingFields.push("T_sample (°C)");
       if (isNaN(poisonVolumeMl)) missingFields.push("V_poison (mL)");
- 
 
       if (missingFields.length > 0) {
         return Object.assign({}, cleanRow, {
-          "Cg  (vol CH4/vol sample)": "",
           "Total_P (atm)": totalPressureAtm,
-          "Pg (atm CH4)": "",
           "Molar_water (mol/L)": molarWater,
           "T_reference (K)": referenceTemperatureK,
-          "T_sample (K)": "",
-          "Kh (atm/molfraction)": "",
           "Molecular_mass_CH4 (g/mol)": methaneMolecularMass,
+          "Molecular_mass_CO2 (g/mol)": co2MolecularMass,
           "Standard volume at NTP (L/mol)": standardVolumeNtp,
-          "C_A (mg/L)": "",
-          "C_AH (mg/L)": "",
-          "TC (mg/L)": "",
           "Calculation check": "Missing: " + missingFields.join(", ")
         });
       }
 
       if (headspaceVolumeMl < 0 || correctedHeadspaceVolumeMl < 0 || sludgeVolumeMl <= 0) {
         return Object.assign({}, cleanRow, {
-          "Cg  (vol CH4/vol sample)": "",
           "Total_P (atm)": totalPressureAtm,
-          "Pg (atm CH4)": "",
           "Molar_water (mol/L)": molarWater,
           "T_reference (K)": referenceTemperatureK,
           "T_sample (K)": roundNumber(referenceTemperatureK + sampleTemperatureC, 3),
-          "Kh (atm/molfraction)": "",
           "Molecular_mass_CH4 (g/mol)": methaneMolecularMass,
+          "Molecular_mass_CO2 (g/mol)": co2MolecularMass,
           "Standard volume at NTP (L/mol)": standardVolumeNtp,
-          "C_A (mg/L)": "",
-          "C_AH (mg/L)": "",
-          "TC (mg/L)": "",
           "Calculation check": "Check calculated volumes"
         });
       }
 
+      const sampleTemperatureK = referenceTemperatureK + sampleTemperatureC;
+
       const methaneFraction = methanePercent * Math.pow(10, -2);
       const methanePartialPressureAtm = methaneFraction * totalPressureAtm;
-      const sampleTemperatureK = referenceTemperatureK + sampleTemperatureC;
 
       const kh = 1 / Math.exp(
         -338.217 +
@@ -268,58 +249,60 @@ const sludgeVolumeMl =
         Math.pow(10, 3);
 
       const totalMethaneMgL = dissolvedMethaneMgL + headspaceMethaneMgL;
-     // =====================
-// CO2 calculations
-// =====================
 
-const co2Fraction = co2Percent * Math.pow(10, -2);
-const co2PartialPressureAtm = co2Fraction * totalPressureAtm;
+      let co2Fraction = "";
+      let co2PartialPressureAtm = "";
+      let khCO2 = "";
+      let dissolvedCO2MgL = "";
+      let headspaceCO2MgL = "";
+      let totalCO2MgL = "";
 
-const khCO2 = 1 / Math.exp(
-  -317.658 +
-  (17371.2 / sampleTemperatureK) +
-  (43.0607 * Math.log(sampleTemperatureK)) +
-  (-0.00219107 * sampleTemperatureK)
-);
+      if (!isNaN(co2Percent)) {
+        co2Fraction = co2Percent * Math.pow(10, -2);
+        co2PartialPressureAtm = co2Fraction * totalPressureAtm;
 
-const dissolvedCO2MgL =
-  molarWater *
-  (co2PartialPressureAtm / khCO2) *
-  co2MolecularMass *
-  Math.pow(10, 3);
+        khCO2 = 1 / Math.exp(
+          -317.658 +
+          (17371.2 / sampleTemperatureK) +
+          (43.0607 * Math.log(sampleTemperatureK)) +
+          (-0.00219107 * sampleTemperatureK)
+        );
 
-const headspaceCO2MgL =
-  (correctedHeadspaceVolumeMl / sludgeVolumeMl) *
-  co2Fraction *
-  ((co2MolecularMass / standardVolumeNtp) *
-   (referenceTemperatureK / sampleTemperatureK)) *
-  Math.pow(10, 3);
+        dissolvedCO2MgL =
+          molarWater *
+          (co2PartialPressureAtm / khCO2) *
+          co2MolecularMass *
+          Math.pow(10, 3);
 
-const totalCO2MgL =
-  dissolvedCO2MgL +
-  headspaceCO2MgL;
+        headspaceCO2MgL =
+          (correctedHeadspaceVolumeMl / sludgeVolumeMl) *
+          co2Fraction *
+          ((co2MolecularMass / standardVolumeNtp) * (referenceTemperatureK / sampleTemperatureK)) *
+          Math.pow(10, 3);
+
+        totalCO2MgL = dissolvedCO2MgL + headspaceCO2MgL;
+      }
 
       return Object.assign({}, cleanRow, {
         "Cg  (vol CH4/vol sample)": roundNumber(methaneFraction, 6),
+        "Cg_CO2 (vol CO2/vol sample)": roundNumber(co2Fraction, 6),
         "Total_P (atm)": totalPressureAtm,
         "Pg (atm CH4)": roundNumber(methanePartialPressureAtm, 6),
+        "Pg_CO2 (atm CO2)": roundNumber(co2PartialPressureAtm, 6),
         "Molar_water (mol/L)": molarWater,
         "T_reference (K)": referenceTemperatureK,
         "T_sample (K)": roundNumber(sampleTemperatureK, 3),
         "Kh (atm/molfraction)": roundNumber(kh, 6),
+        "Kh_CO2 (atm/molfraction)": roundNumber(khCO2, 6),
         "Molecular_mass_CH4 (g/mol)": methaneMolecularMass,
+        "Molecular_mass_CO2 (g/mol)": co2MolecularMass,
         "Standard volume at NTP (L/mol)": standardVolumeNtp,
         "C_A (mg/L)": roundNumber(dissolvedMethaneMgL, 6),
-"C_AH (mg/L)": roundNumber(headspaceMethaneMgL, 6),
-"TC (mg/L)": roundNumber(totalMethaneMgL, 6),
-
-"Cg_CO2 (vol CO2/vol sample)": roundNumber(co2Fraction, 6),
-"Pg_CO2 (atm CO2)": roundNumber(co2PartialPressureAtm, 6),
-"Kh_CO2 (atm/molfraction)": roundNumber(khCO2, 6),
-"Molecular_mass_CO2 (g/mol)": co2MolecularMass,
-"C_A_CO2 (mg/L)": roundNumber(dissolvedCO2MgL, 6),
-"C_AH_CO2 (mg/L)": roundNumber(headspaceCO2MgL, 6),
-"TC_CO2 (mg/L)": roundNumber(totalCO2MgL, 6),
+        "C_AH (mg/L)": roundNumber(headspaceMethaneMgL, 6),
+        "TC (mg/L)": roundNumber(totalMethaneMgL, 6),
+        "C_A_CO2 (mg/L)": roundNumber(dissolvedCO2MgL, 6),
+        "C_AH_CO2 (mg/L)": roundNumber(headspaceCO2MgL, 6),
+        "TC_CO2 (mg/L)": roundNumber(totalCO2MgL, 6),
         "Calculation check": "OK"
       });
     }
@@ -347,15 +330,14 @@ const totalCO2MgL =
           if (header !== "") obj[header] = row[i] !== undefined ? row[i] : "";
         });
         return obj;
-   }).filter(function(row) {
-  const sampleName = getValue(row, "Sample_name");
+      }).filter(function(row) {
+        const sampleName = getValue(row, "Sample_name");
+        return sampleName !== undefined &&
+               sampleName !== null &&
+               String(sampleName).trim() !== "";
+      });
+    }
 
-  return sampleName !== undefined &&
-         sampleName !== null &&
-         String(sampleName).trim() !== "";
-});
-      
-}
     function processSheetData(jsonData) {
       if (!jsonData || jsonData.length === 0) {
         alert("No valid data found.");
@@ -363,7 +345,11 @@ const totalCO2MgL =
       }
 
       processedData = jsonData.map(function(row) { return calculateRow(row); });
-      const okRows = processedData.filter(function(row) { return row["Calculation check"] === "OK"; }).length;
+
+      const okRows = processedData.filter(function(row) {
+        return row["Calculation check"] === "OK";
+      }).length;
+
       document.getElementById("fileUploadStatus").textContent =
         "Processed " + processedData.length + " rows. " + okRows + " rows calculated successfully.";
 
@@ -378,6 +364,7 @@ const totalCO2MgL =
 
       const thead = document.getElementById("tableHeaders");
       const tbody = document.getElementById("dataTable");
+
       thead.innerHTML = "";
       tbody.innerHTML = "";
 
@@ -389,11 +376,13 @@ const totalCO2MgL =
 
       data.forEach(function(row) {
         const tr = document.createElement("tr");
+
         outputColumns.forEach(function(col) {
           const td = document.createElement("td");
           td.textContent = row[col] !== undefined && row[col] !== null ? row[col] : "";
           tr.appendChild(td);
         });
+
         tbody.appendChild(tr);
       });
 
