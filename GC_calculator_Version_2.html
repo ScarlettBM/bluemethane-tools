@@ -107,6 +107,13 @@
       "Concent_CH4 (%)",
       "CO2%",
       "Cg  (vol CH4/vol sample)",
+      "Cg_CO2 (vol CO2/vol sample)",
+"Pg_CO2 (atm CO2)",
+"Kh_CO2 (atm/molfraction)",
+"Molecular_mass_CO2 (g/mol)",
+"C_A_CO2 (mg/L)",
+"C_AH_CO2 (mg/L)",
+"TC_CO2 (mg/L)",
       "Total_P (atm)",
       "Pg (atm CH4)",
       "Molar_water (mol/L)",
@@ -163,6 +170,7 @@
 
     function calculateRow(row) {
       const methanePercent = getNumber(row, "Concent_CH4 (%)");
+      const co2Percent = getNumber(row, "CO2%");
       const vialVolumeMl = getNumber(row, "V_vial (mL)");
       const headspaceVolumeMl = getNumber(row, "V_headspace (mL)");
       const expansionVolumeMl = getNumber(row, "V_expansion (mL)");
@@ -179,6 +187,7 @@ const sludgeVolumeMl =
       const molarWater = 55.5;
       const referenceTemperatureK = 273.15;
       const methaneMolecularMass = 16.04;
+      const co2MolecularMass = 44.01;
       const standardVolumeNtp = 22.4;
 
       const cleanRow = {};
@@ -259,6 +268,36 @@ const sludgeVolumeMl =
         Math.pow(10, 3);
 
       const totalMethaneMgL = dissolvedMethaneMgL + headspaceMethaneMgL;
+     // =====================
+// CO2 calculations
+// =====================
+
+const co2Fraction = co2Percent * Math.pow(10, -2);
+const co2PartialPressureAtm = co2Fraction * totalPressureAtm;
+
+const khCO2 = 1 / Math.exp(
+  -317.658 +
+  (17371.2 / sampleTemperatureK) +
+  (43.0607 * Math.log(sampleTemperatureK)) +
+  (-0.00219107 * sampleTemperatureK)
+);
+
+const dissolvedCO2MgL =
+  molarWater *
+  (co2PartialPressureAtm / khCO2) *
+  co2MolecularMass *
+  Math.pow(10, 3);
+
+const headspaceCO2MgL =
+  (correctedHeadspaceVolumeMl / sludgeVolumeMl) *
+  co2Fraction *
+  ((co2MolecularMass / standardVolumeNtp) *
+   (referenceTemperatureK / sampleTemperatureK)) *
+  Math.pow(10, 3);
+
+const totalCO2MgL =
+  dissolvedCO2MgL +
+  headspaceCO2MgL;
 
       return Object.assign({}, cleanRow, {
         "Cg  (vol CH4/vol sample)": roundNumber(methaneFraction, 6),
@@ -271,8 +310,18 @@ const sludgeVolumeMl =
         "Molecular_mass_CH4 (g/mol)": methaneMolecularMass,
         "Standard volume at NTP (L/mol)": standardVolumeNtp,
         "C_A (mg/L)": roundNumber(dissolvedMethaneMgL, 6),
-        "C_AH (mg/L)": roundNumber(headspaceMethaneMgL, 6),
-        "TC (mg/L)": roundNumber(totalMethaneMgL, 6),
+"C_AH (mg/L)": roundNumber(headspaceMethaneMgL, 6),
+"TC (mg/L)": roundNumber(totalMethaneMgL, 6),
+
+"Cg_CO2 (vol CO2/vol sample)": roundNumber(co2Fraction, 6),
+"Pg_CO2 (atm CO2)": roundNumber(co2PartialPressureAtm, 6),
+"Kh_CO2 (atm/molfraction)": roundNumber(khCO2, 6),
+"Molecular_mass_CO2 (g/mol)": co2MolecularMass,
+"C_A_CO2 (mg/L)": roundNumber(dissolvedCO2MgL, 6),
+"C_AH_CO2 (mg/L)": roundNumber(headspaceCO2MgL, 6),
+"TC_CO2 (mg/L)": roundNumber(totalCO2MgL, 6),
+
+"Calculation check": "OK"
         "Calculation check": "OK"
       });
     }
